@@ -2,9 +2,15 @@ library(shiny)
 library(shinythemes)
 library(symmetry)
 library(ggplot2)
+library(R2jags)
+#library(rstan)
+
+#options(mc.cores = parallel::detectCores())
 
 source('./R/utils.R')
 source('./R/inputAndDTmodule.R')
+source('./R/awaModule.R')
+
 
 ui <- fluidPage(theme=shinytheme('spacelab'),
     
@@ -16,13 +22,7 @@ ui <- fluidPage(theme=shinytheme('spacelab'),
         
         tabPanel("Decision Tree",DT_UI('DT')),
         
-        navbarMenu("Run Procedure",
-                   tabPanel("Adaptive Weighted Average",
-                            awa_UI('awa')),
-                   tabPanel("Weighted Median"),
-                   tabPanel("Hierarchical Gauss-Gauss"),
-                   tabPanel("Hierarchical Laplace-Gauss"),
-                   tabPanel("Hierarchical Skew Student-Gauss"))
+        tabPanel("Results",resultsUI('results'))
         
     )
     
@@ -34,9 +34,9 @@ server <- function(input, output, session) {
     
     vars_in <- input_server('input')
     
-    DT_server('DT',vars_in)
+    selected_procedure <- DT_server('DT',vars_in)
     
-    awa_server('awa',vars_in)
+    resultsServer('results',vars_in,selected_procedure)
     
 }
 

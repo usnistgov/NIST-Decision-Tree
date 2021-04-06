@@ -6,7 +6,9 @@ inputUI <- function(id) {
     fluidRow(column(4,textInput(ns('mv'),'Measured Values',value='1,2,3'))),
     fluidRow(column(4,textInput(ns('su'),"Standard Uncertainties",value='1,1,1'))),
     fluidRow(column(4,textInput(ns('df'),"Degrees of Freedom",value='5,6,7'))),
-    fluidRow(column(1,actionButton(ns('go'),"Go")))
+    fluidRow(column(1,actionButton(ns('validate'),"Go"))),
+    br(),
+    fluidRow(column(4,uiOutput(ns('validate_msg'))))
     #fluidRow(column(4,textOutput(ns('go_message'))))
   )
 
@@ -35,7 +37,10 @@ DT_UI <- function(id) {
       column(width=6,offset=1,
              fluidRow(imageOutput(ns('dt'),inline=TRUE)),
              br(),
-             fluidRow(uiOutput(ns("recommendation")))))
+             fluidRow(uiOutput(ns("recommendation"))),
+             br(),
+             uiOutput(ns('procedure_prompt'))
+             ))
     
   )
 }
@@ -50,28 +55,87 @@ input_server <- function(id) {
     function(input,output,session) {
 
       # format input variables
-      vars_in <- eventReactive(input$go, {
-          measured_vals = eval(parse(text=paste('c(',input$mv,')')))
-          standard_unc = eval(parse(text=paste('c(',input$su,')')))
-          dof = eval(parse(text=paste('c(',input$df,')')))
-          
-          return(list(measured_vals=measured_vals,
-                      standard_unc=standard_unc,
-                      dof=dof))
+      init <- eventReactive(input$validate, {
+        
+        measured_vals = tryCatch({
+          eval(parse(text=paste('c(',input$mv,')')))
+        },error = function(c) "error",
+        warning = function(c) "error")  
+        
+
+        standard_unc = tryCatch({
+          eval(parse(text=paste('c(',input$su,')')))
+        },error = function(c) "error",
+        warning = function(c) "error") 
+        
+        
+        dof = tryCatch({
+          eval(parse(text=paste('c(',input$df,')')))
+        },error = function(c) "error",
+        warning = function(c) "error") 
+
+        if(any(measured_vals == 'error',standard_unc == 'error',dof == 'error')) {
+          return("Formatting Error. Each input should follow the format <number>, <number>, ..., <number>.")
+        }
+        
+        if(!all(is.numeric(as.numeric(c(measured_vals,standard_unc,dof))))) {
+          return("Non-numeric values detected as inputs.")
+        }
+        
+        if(any(dof < 1)) {
+          return("Degrees of freedom cannot be less than 1.")
+        }
+        
+        if(any(standard_unc <= 0)) {
+          return("Standard uncertainties must be positive.")
+        }
+        
+        n1 = length(measured_vals)
+        n2 = length(standard_unc)
+        n3 = length(dof)
+        
+        if(any(n1!=n2,n1!=n3,n2!=n3)){
+          return("Unequal number of entries. Each field should have the same number of input quantities.")
+        }
+        
+        if(n1 < 3) {
+          return("Need more than 3 observations to use the decision tree.")
+        }
+        
+        return(list(measured_vals=measured_vals,
+                    standard_unc=standard_unc,
+                    dof=dof))
       })
       
-      observeEvent(input$go, {
-        #output$go_message <- renderText("Data saved. Proceed to next tab.")
+      vars_in <- eventReactive(init(), {
         
-        observeEvent(input$go, {
-          showModal(modalDialog(
-            title = "Data Saved.",
-            paste("Your data has been submitted. Please proceed to the next tab.")
-          ))
+        if(is.list(init())) {
+          return(init())
+        } else {
+          return(NULL)
+        }
+        
+      })
+      
+      observeEvent(init, {
+        
+        output$validate_msg = renderUI({
+          
+          
+          if(is.list(init())) {
+            return(
+              h5("Valid inputs. Proceed to next tab.",style='color:#009900')
+              )
+            
+          } else{
+            return(
+              h5(init(),style="color:#cc0000")
+            )
+          }
         })
+        
       })
 
-      
       return(vars_in)
     }
   )
@@ -84,9 +148,6 @@ DT_server <- function(id,vars_in) {
       
       # 'state' is variable to keep track of the app's state
       #
-      # start = 0: user has not submitted data; 
-      # start = 1: user has submitted data 
-      #
       # Q = -1: user has not made an assumption about homogeneity
       # Q = 0/1: user has accepted/rejected assumption of homogeneity
       #
@@ -98,6 +159,7 @@ DT_server <- function(id,vars_in) {
       state = reactiveValues(Q=-1,QY_norm=-1,QN_sym=-1,NY_norm=-1)
       
       observeEvent(vars_in(), {
+        # reset when vars_in changes
         state$Q = -1
         state$QY_norm = -1
         state$QN_sym = -1
@@ -107,6 +169,8 @@ DT_server <- function(id,vars_in) {
       # the test based on the user's selections
       which_test = reactiveValues(awa=0,wmed=0,hgg=0,hlg=0,hssg=0)
       
+      # recommendation based on the selected test
+      # updates when 'which_test' is updated
       output$recommendation = renderUI({
         test_names = c('awa','wmed','hgg','hlg','hssg')
         
@@ -125,6 +189,40 @@ DT_server <- function(id,vars_in) {
         }
       })
       
+      output$procedure_prompt = renderUI({
+        if(all_false(which_test)) {
+          return(NULL)
+        }
+        
+        recommended_test = get_test_name(which_test)
+        all_tests = c('Adaptive Weighted Average',
+                      'Weighted Median',
+                      'Hierarchical Gauss-Gauss',
+                      'Hierarchical Laplace-Gauss',
+                      'Hierarchical Skew Student-Gauss')
+        
+        not_recommended = all_tests[all_tests != recommended_test]
+        
+        tagList(
+          h5("Click 'Go' to run the selected procedure, then proceed to the 'Results' Tab:"),
+          selectInput(session$ns('user_selected_procedure'),
+                      label=NULL,
+                      choices=c(paste(recommended_test,'(recommended)'),
+                                not_recommended),
+                      selected=paste(recommended_test,'(recommended)'),
+                      width='100%'),
+          actionButton(session$ns('run_proc'),'Go')
+        )
+
+        
+        
+      })
+      
+      to_return <- eventReactive(input$run_proc,{
+        return(input$user_selected_procedure)
+      })
+      
+      # loads decision tree image based on state variables updating
       output$dt <- renderImage({
         
         if(state$Q == -1) {
@@ -211,7 +309,7 @@ DT_server <- function(id,vars_in) {
       })
       
       
-      #### initial Q test output
+      #### initial Q test output (printed by default)
       output$Q_test_heading <- renderUI({
         
         if(is.null(vars_in())) {
@@ -250,7 +348,9 @@ DT_server <- function(id,vars_in) {
                            sei = standard_unc,
                            method = "DL")
         
-        paste("p = ",round(res$QEp,5),"; Q = ",res$QE,sep='')
+        paste("p = ",signif(res$QEp,4),
+              "; Q = ",signif(res$QE,4),
+              "; DL tau estimate = ",signif(sqrt(res$tau2),4), sep='')
         
       })
 
@@ -295,7 +395,7 @@ DT_server <- function(id,vars_in) {
             mvs = isolate(vars_in()$measured_vals)
             sus = isolate(vars_in()$standard_unc)
             res = shapiro.test((mvs-median(mvs))/sus) 
-            paste("p:", round(res$p.value,5))
+            paste("p:", signif(res$p.value,2))
           })
           
           output$step_2_prompt <- renderUI({
@@ -325,7 +425,7 @@ DT_server <- function(id,vars_in) {
             
             mvs = isolate(vars_in()$measured_vals)
             res = symmetry::symmetry_test(mvs,stat='MGG',bootstrap=TRUE, B=10000) 
-            paste("p:", round(res$p.value,5))
+            paste("p:", signif(res$p.value,2))
           })
           
           output$step_2_prompt <- renderUI({
@@ -418,7 +518,7 @@ DT_server <- function(id,vars_in) {
             mvs = isolate(vars_in()$measured_vals)
             sus = isolate(vars_in()$standard_unc)
             res = shapiro.test((mvs-median(mvs))/sus) 
-            paste("p:", round(res$p.value,5))
+            paste("p:", signif(res$p.value,2))
           })
           
           output$step_3_prompt <- renderUI({
@@ -449,6 +549,8 @@ DT_server <- function(id,vars_in) {
           which_test = unselect_test('hlg',which_test)
         }
       })
+      
+      return(to_return)
     }
   )
 }
