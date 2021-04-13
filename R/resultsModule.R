@@ -97,7 +97,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         if(grepl('gauss.+gauss',the_proc,TRUE)) {
           res$method = "Heirarchical Guass-Gauss"
-          filename = 'R/hgg.txt'
+          filename = 'R/hgg.stan'
         } else if(grepl('laplace',the_proc,TRUE)){
           res$method = "Heirarchical Laplace-Gauss"
           filename = 'R/hlg.txt'
