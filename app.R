@@ -2,14 +2,15 @@ library(shiny)
 library(shinythemes)
 library(symmetry)
 library(ggplot2)
-library(R2jags)
 #library(rstan)
+library(R2jags)
 
 #options(mc.cores = parallel::detectCores())
+#rstan_options(auto_write = TRUE)
 
 source('./R/utils.R')
 source('./R/inputAndDTmodule.R')
-source('./R/awaModule.R')
+source('./R/resultsModule.R')
 
 
 ui <- fluidPage(theme=shinytheme('spacelab'),

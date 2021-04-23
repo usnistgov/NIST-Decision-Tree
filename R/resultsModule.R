@@ -6,7 +6,7 @@ resultsUI <- function(id) {
     br(),
     br(),
     h4("Consensus and Lab Estimates"),
-    fluidRow(plotOutput(ns('model_plot'),width="80%"))
+    fluidRow(plotOutput(ns('model_plot_v2'),width="80%"))
   )
   
 }
@@ -19,6 +19,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
 
       res = eventReactive(selected_procedure(),{
         # do stats
+        
+        # res expects the following scalar values:
+        # mu, mu_upper, mu_lower
+        # tau, se (of the mean)
         
         the_proc = selected_procedure()
         res = list()
@@ -43,7 +47,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$mu = DLres$beta
           res$mu_upper = DLres$ci.ub
           res$mu_lower = DLres$ci.lb
-          res$tau2 = DLres$tau2
+          res$tau = sqrt(DLres$tau2)
           res$se = DLres$se
           
           res$proc_complete = TRUE
@@ -51,7 +55,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
 
         } else if(grepl('median',the_proc,TRUE)) {
           
-          res$mu = spatstat::weighted.median(x, 1/u^2)
+          res$mu = spatstat.geom::weighted.median(x, 1/u^2)
           
           if(length(x) >= 12) {
             
@@ -67,6 +71,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             res$se = sd(xm.boot$t)
             res$mu_lower = bootCI$percent[4]
             res$mu_upper = bootCI$percent[5]
+            res$tau = NULL
           
           } else {
             
@@ -83,6 +88,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             res$se = sd(boot_samples)
             res$mu_upper = quantile(boot_samples,0.975)
             res$mu_lower = quantile(boot_samples,0.025)
+            res$tau = NULL
             
           } 
           
@@ -92,56 +98,86 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
         } else { # all Bayesian procedures
           
-          # mu, mu_upper, mu_lower, se (of mu), tau2, se (of x)
+          # mu, mu_upper, mu_lower, se (of mu), tau, se (of x)
           # x, u
         
         if(grepl('gauss.+gauss',the_proc,TRUE)) {
           res$method = "Heirarchical Guass-Gauss"
-          filename = 'R/hgg.stan'
+          stan_filename = 'R/Stan/hgg.stan'
+          jags_filename = 'R/Jags/hgg.txt'
+          
         } else if(grepl('laplace',the_proc,TRUE)){
           res$method = "Heirarchical Laplace-Gauss"
-          filename = 'R/hlg.txt'
+          stan_filename = 'R/Stan/hlg.stan'
+          jags_filename = 'R/Jags/hlg.txt'
+          
         } else if(grepl('skew',the_proc,TRUE)) {
           res$method = "Skew Student-Gauss"
-          filename = 'R/hssg.txt'
+          stan_filename = 'R/Stan/hssg.stan'
+          jags_filename = 'R/Jags/hssg.txt'
+        }
+          
+          
+        loaded_packages = .packages()
+        
+        if('rstan' %in% loaded_packages) {
+          mcmc_sampler = 'stan'
+        } else{
+          mcmc_sampler = 'jags'
+        }
+        
+        model_inits = function() {
+          list(mu = mean(x),
+               tau = sqrt(var(x)),
+               lambda = x,
+               sigma=u)
+        }
+        
+        model_data = list(N=n, 
+                          x=x, 
+                          u2=u^2, 
+                          dof=dof, 
+                          med_abs_dif=mad(x))
+        
+        if(mcmc_sampler == 'stan') {
+
+          # Run MCMC
+          stan_out = stan(file=stan_filename,
+                          data=stan_data,
+                          init=model_inits,
+                          iter=2000,
+                          warmup=1000,
+                          chains=1)
+          
+          stan_out = extract(stan_out)
+          
+          res$mu = mean(stan_out$mu)
+          res$mu_upper = quantile(stan_out$mu,.975)
+          res$mu_lower = quantile(stan_out$mu,.025)
+          res$se = sqrt(var(stan_out$mu))
+          res$tau = mean(stan_out$tau)
+          
+        } else if(mcmc_sampler == 'jags') {
+          
+          jags_out = jags(data = model_data,
+                          inits = model_inits,
+                          model.file=jags_filename,
+                          parameters.to.save = c('mu','tau','lambda','sigma'),
+                          n.chains = 2,
+                          n.iter = 2000)
+          
+          p_samples = jags_out$BUGSoutput$sims.list
+          
+          res$mu = mean(p_samples$mu)
+          res$mu_upper = quantile(p_samples$mu,.975)
+          res$mu_lower = quantile(p_samples$mu,.025)
+          res$se = sqrt(var(p_samples$mu))
+          res$tau = mean(p_samples$tau)
+          
         }
 
-        # jags setup
-        tauPriorScale=mad(x)
-        jags_data = list(n=n, x=x, s2=u^2, dof=dof, tauPriorScale=tauPriorScale, u_prior_scale=median(u))
-        
-        if(res$method == "Skew Student-Gauss") {
-          # for "zero's trick"
-          jags_data$z = rep(0,n)
-        }
-        
-        jags_inits = function() {
-          list(mu = mean(x),
-               tau = 1,
-               xi = x,
-               ui = u) 
-        }
-        
-        # Parameters to estimate
-        jags_params = c("mu", "tau", "xi", "ui")
-        
-        # Run MCMC
-        
-        jags_out = jags(jags_data,
-                        inits=jags_inits,
-                        parameters.to.save=jags_params,
-                        model.file=filename,
-                        n.iter=4000,
-                        n.chains=1)
-        
-        jags_out = as.mcmc(jags_out)
-        jags_out = jags_out[[1]]
-        
-        res$mu = mean(jags_out[,'mu'])
-        res$mu_upper = quantile(jags_out[,'mu'],.975)
-        res$mu_lower = quantile(jags_out[,'mu'],.025)
-        res$se = sqrt(var(jags_out[,'mu']))
-        res$tau2 = mean(jags_out[,'tau']**2)
+
+
         
         res$proc_complete = TRUE
         
@@ -169,7 +205,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
               h5(paste("Consensus estimate:",round(res$mu,3))),
               h5(paste("Standard uncertainty:", round(res$se,3))),
               h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-              h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau2),3) ))
+              h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
               
             )
           )
@@ -191,7 +227,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
               h5(paste("Consensus estimate:",round(res$mu,3))),
               h5(paste("Standard uncertainty:", round(res$se,3))),
               h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-              h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau2),3) ))
+              h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
             )
           )
         }
@@ -225,6 +261,29 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         return(p)
 
+        
+      })
+      
+      output$model_plot_v2 = renderPlot({
+        
+        res = res()
+        vars_in = as.data.frame(vars_in())
+        the_proc = selected_procedure()
+        
+        if(grepl('recommend',the_proc,ignore.case = T)) {
+          the_proc = strsplit(the_proc,'\\(')[[1]][1]
+        }
+        
+        KCplot(val=vars_in$measured_vals, 
+               unc=vars_in$standard_unc, 
+               tau=res$tau,
+               kcrv=res$mu, 
+               kcrv.unc=res$se,
+               lab=paste('Lab',1:length(vars_in$measured_vals)), 
+               title=paste("KCV Estimation:",the_proc), 
+               title.placement="left",
+               ylab=NULL, 
+               exclude=NULL)
         
       })
       

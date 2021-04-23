@@ -3,9 +3,9 @@ inputUI <- function(id) {
   
   tagList(
     br(),
-    fluidRow(column(4,textInput(ns('mv'),'Measured Values',value='1,2,3'))),
-    fluidRow(column(4,textInput(ns('su'),"Standard Uncertainties",value='1,1,1'))),
-    fluidRow(column(4,textInput(ns('df'),"Degrees of Freedom",value='5,6,7'))),
+    fluidRow(column(4,textInput(ns('mv'),'Measured Values',value='1,2,3,5'))),
+    fluidRow(column(4,textInput(ns('su'),"Standard Uncertainties",value='1,1,1,2'))),
+    fluidRow(column(4,textInput(ns('df'),"Degrees of Freedom",value='5,6,7,8'))),
     fluidRow(column(1,actionButton(ns('validate'),"Go"))),
     br(),
     fluidRow(column(4,uiOutput(ns('validate_msg'))))
@@ -13,6 +13,7 @@ inputUI <- function(id) {
   )
 
 }
+
 
 DT_UI <- function(id) {
   ns <- NS(id)
@@ -57,30 +58,21 @@ input_server <- function(id) {
       # format input variables
       init <- eventReactive(input$validate, {
         
-        measured_vals = tryCatch({
-          eval(parse(text=paste('c(',input$mv,')')))
-        },error = function(c) "error",
-        warning = function(c) "error")  
+        mv_check = has_correct_format(input$mv)  
         
-
-        standard_unc = tryCatch({
-          eval(parse(text=paste('c(',input$su,')')))
-        },error = function(c) "error",
-        warning = function(c) "error") 
+        su_check = has_correct_format(input$su)  
         
+        dof_check = has_correct_format(input$df)
+      
         
-        dof = tryCatch({
-          eval(parse(text=paste('c(',input$df,')')))
-        },error = function(c) "error",
-        warning = function(c) "error") 
-
-        if(any(measured_vals == 'error',standard_unc == 'error',dof == 'error')) {
+        if(!all(mv_check,su_check,dof_check)) {
           return("Formatting Error. Each input should follow the format <number>, <number>, ..., <number>.")
         }
         
-        if(!all(is.numeric(as.numeric(c(measured_vals,standard_unc,dof))))) {
-          return("Non-numeric values detected as inputs.")
-        }
+        measured_vals = as.numeric(strsplit(input$mv,',')[[1]])
+        standard_unc = as.numeric(strsplit(input$su,',')[[1]])
+        dof = as.numeric(strsplit(input$df,',')[[1]])
+        
         
         if(any(dof < 1)) {
           return("Degrees of freedom cannot be less than 1.")
@@ -89,6 +81,8 @@ input_server <- function(id) {
         if(any(standard_unc <= 0)) {
           return("Standard uncertainties must be positive.")
         }
+        
+
         
         n1 = length(measured_vals)
         n2 = length(standard_unc)
@@ -99,7 +93,7 @@ input_server <- function(id) {
         }
         
         if(n1 < 3) {
-          return("Need more than 3 observations to use the decision tree.")
+          return("Need at least 3 observations to use the decision tree.")
         }
         
         return(list(measured_vals=measured_vals,
@@ -140,6 +134,7 @@ input_server <- function(id) {
     }
   )
 }
+
 
 DT_server <- function(id,vars_in) {
   moduleServer(
