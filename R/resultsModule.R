@@ -11,8 +11,11 @@ resultsUI <- function(id) {
     br(),
     uiOutput(ns('model_text_output')),
     br(),
-    fluidRow(plotOutput(ns('model_plot_v2'),width="50%"),
-             plotOutput(ns('doe_plot')))
+    fluidRow(plotOutput(ns('model_plot_v2'),width="50%")),
+    br(),
+    h4("Unilateral Degrees of Equivalence Table"),
+    br(),
+    DT::dataTableOutput(ns('doe_table'),width='60%')
     
   )
   
@@ -53,7 +56,12 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         }
         
         if(grepl('average',the_proc,TRUE)) {
-          return(NULL)
+          
+          return(
+            tagList(
+              numericInput(session$ns('num_DL_DOE_bootstrap'),"Number Bootstrap for DOE",value=1000)
+            )
+          )
           
         } else if(grepl('median',the_proc,TRUE)) {
           return(NULL)
@@ -194,6 +202,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                           dof=dof, 
                           med_abs_dif=isolate(input$tau_prior_scale))
         
+        if(grepl('skew',the_proc,TRUE) & mcmc_sampler == 'jags') {
+          model_data$z = rep(0,length(model_data$x))
+        }
+        
         if(mcmc_sampler == 'stan') {
 
           # Run MCMC
@@ -302,58 +314,114 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
       })
       
-      output$model_plot = renderPlot({
-        # make plot of values
-        
-        res = res()
-        vars_in = as.data.frame(vars_in())
-        vars_in$lab = factor(1:nrow(vars_in))
-        vars_in$lower = vars_in$measured_vals - vars_in$standard_unc
-        vars_in$upper = vars_in$measured_vals + vars_in$standard_unc
-        
-        the_proc = selected_procedure()
-        
-        # consensus value +/- standard error of mu
-        gmrib_data = data.frame(x=0:(nrow(vars_in)+1),ymin = res$mu - res$se,ymax=res$mu+res$se)
-        
-        # plot the raw data
-        p = ggplot(vars_in,aes(x=lab,y=measured_vals)) + 
-              geom_point() +
-              geom_hline(yintercept = res$mu) + # consensus estimate
-              geom_errorbar(aes(ymin=lower,ymax=upper),width=.1,size=1) + # user data
-              geom_ribbon(data=gmrib_data, 
-                          aes(x=x,ymin=ymin,ymax=ymax),inherit.aes = FALSE,alpha=.2) + # KCV confidence interval
-              ylab("Measured Value") + 
-              xlab("Lab")
-        
-        return(p)
-
-        
-      })
+      # output$model_plot = renderPlot({
+      #   # make plot of values
+      #   
+      #   res = res()
+      #   vars_in = as.data.frame(vars_in())
+      #   vars_in$lab = factor(1:nrow(vars_in))
+      #   vars_in$lower = vars_in$measured_vals - vars_in$standard_unc
+      #   vars_in$upper = vars_in$measured_vals + vars_in$standard_unc
+      #   
+      #   the_proc = selected_procedure()
+      #   
+      #   # consensus value +/- standard error of mu
+      #   gmrib_data = data.frame(x=0:(nrow(vars_in)+1),ymin = res$mu - res$se,ymax=res$mu+res$se)
+      #   
+      #   # plot the raw data
+      #   p = ggplot(vars_in,aes(x=lab,y=measured_vals)) + 
+      #         geom_point() +
+      #         geom_hline(yintercept = res$mu) + # consensus estimate
+      #         geom_errorbar(aes(ymin=lower,ymax=upper),width=.1,size=1) + # user data
+      #         geom_ribbon(data=gmrib_data, 
+      #                     aes(x=x,ymin=ymin,ymax=ymax),inherit.aes = FALSE,alpha=.2) + # KCV confidence interval
+      #         ylab("Measured Value") + 
+      #         xlab("Lab")
+      #   
+      #   return(p)
+      # 
+      #   
+      # })
       
-      output$model_plot_v2 = renderPlot({
+      doe_res = eventReactive(input$run_method, {
         
-        res = res()
         vars_in = vars_in()
         the_proc = isolate(selected_procedure())
         
-        if(grepl('recommend',the_proc,ignore.case = T)) {
-          the_proc = strsplit(the_proc,'\\(')[[1]][1]
+        if(grepl('average',the_proc,TRUE)) {
+          
+          data = vars_in()$the_data
+          
+          DLres = metafor::rma(yi=data$Result, 
+                               sei=data$Uncertainty,
+                               level=95,
+                               method="DL")
+          
+          doe_res = DoEUnilateralDL(data$Result,
+                                    data$Uncertainty,
+                                    data$`Degrees of Freedom`,
+                                    data$Laboratory,
+                                    isolate(input$num_DL_DOE_bootstrap), # number bootstrap
+                                    TRUE, # LOO
+                                    .95, # coverage prob
+                                    DLres) # dl res
+          
+          return(doe_res)
+          
+        } else {
+          
+          return(NULL)
         }
         
-        KCplot(val=vars_in$measured_vals, 
-               unc=vars_in$standard_unc, 
-               tau=res$tau,
-               kcrv=res$mu, 
-               kcrv.unc=res$se,
-               lab=paste('Lab',1:length(vars_in$measured_vals)), 
-               title=paste("KCV Estimation:",the_proc), 
-               title.placement="left",
-               ylab=NULL, 
-               exclude=NULL)
         
       })
       
+      observeEvent(res, {
+        
+        output$model_plot_v2 = renderPlot({
+          
+          res = res()
+          vars_in = vars_in()
+          the_proc = isolate(selected_procedure())
+          
+          if(grepl('recommend',the_proc,ignore.case = T)) {
+            the_proc = strsplit(the_proc,'\\(')[[1]][1]
+          }
+          
+          KCplot(val=vars_in$measured_vals, 
+                 unc=vars_in$standard_unc, 
+                 tau=res$tau,
+                 kcrv=res$mu, 
+                 kcrv.unc=res$se,
+                 lab=paste('Lab',1:length(vars_in$measured_vals)), 
+                 title=paste("KCV Estimation:",the_proc), 
+                 title.placement="left",
+                 ylab=NULL, 
+                 exclude=NULL)
+          
+        })
+
+      })
+      
+      observeEvent(doe_res, {
+      
+        output$doe_table = DT::renderDataTable({
+          
+          if(is.null(doe_res())) {
+            return(NULL)
+          }
+          
+          data = doe_res()$DoE
+          
+          data[,2:5] = signif(data[,2:5])
+          
+          return(data)
+          
+          },
+          options=list(searching=FALSE,paging=FALSE),
+          rownames = FALSE)
+        
+      })
       
     }
   )

@@ -14,6 +14,10 @@ source('./R/utils.R')
 source('./R/inputAndDTmodule.R')
 source('./R/resultsModule.R')
 
+source('./R/DOE/DoEUnilateralDL.R')
+source('./R/DOE/sampleFromTau2Dist.R')
+source('./R/DOE/symmetricalBootstrapCI.R')
+
 
 ui <- fluidPage(theme=shinytheme('spacelab'),
     
