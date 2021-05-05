@@ -2,11 +2,18 @@ resultsUI <- function(id) {
   ns = NS(id)
   
   tagList(
+    br(),
+    uiOutput(ns('method_name')),
+    br(),
+    uiOutput(ns('prior_options')),
+    actionButton(ns('run_method'),"Run Method"),
+    helpText("Click the above button to run the selected method"),
+    br(),
     uiOutput(ns('model_text_output')),
     br(),
-    br(),
-    h4("Consensus and Lab Estimates"),
-    fluidRow(plotOutput(ns('model_plot_v2'),width="80%"))
+    fluidRow(plotOutput(ns('model_plot_v2'),width="50%"),
+             plotOutput(ns('doe_plot')))
+    
   )
   
 }
@@ -16,8 +23,56 @@ resultsServer <- function(id,vars_in,selected_procedure) {
     id,
     function(input,output,session) {
       
+      output$method_name = renderUI({
+        
+        the_proc = selected_procedure()
+        
+        if(is.null(the_proc)) {
+          return(NULL)
+        }
+        
+        else{
+          
+          return(
+            tagList(
+              h3(the_proc)
+            )
+          )
+          
+        }
 
-      res = eventReactive(selected_procedure(),{
+        
+      })
+      
+      output$prior_options = renderUI({
+        
+        the_proc = selected_procedure()
+        
+        if(is.null(the_proc)) {
+          return(NULL)
+        }
+        
+        if(grepl('average',the_proc,TRUE)) {
+          return(NULL)
+          
+        } else if(grepl('median',the_proc,TRUE)) {
+          return(NULL)
+          
+        } else {
+          
+          default = mad(vars_in()$measured_vals)
+          
+          return(
+            tagList(
+              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale",value=default)
+            )
+          )
+        }
+
+        
+      })
+      
+      res = eventReactive(input$run_method,{
         # do stats
         
         # res expects the following scalar values:
@@ -102,12 +157,12 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           # x, u
         
         if(grepl('gauss.+gauss',the_proc,TRUE)) {
-          res$method = "Heirarchical Guass-Gauss"
+          res$method = "Hierarchical Guass-Gauss"
           stan_filename = 'R/Stan/hgg.stan'
           jags_filename = 'R/Jags/hgg.txt'
           
         } else if(grepl('laplace',the_proc,TRUE)){
-          res$method = "Heirarchical Laplace-Gauss"
+          res$method = "Hierarchical Laplace-Gauss"
           stan_filename = 'R/Stan/hlg.stan'
           jags_filename = 'R/Jags/hlg.txt'
           
@@ -137,17 +192,21 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                           x=x, 
                           u2=u^2, 
                           dof=dof, 
-                          med_abs_dif=mad(x))
+                          med_abs_dif=isolate(input$tau_prior_scale))
         
         if(mcmc_sampler == 'stan') {
 
           # Run MCMC
-          stan_out = stan(file=stan_filename,
-                          data=stan_data,
-                          init=model_inits,
-                          iter=2000,
-                          warmup=1000,
-                          chains=1)
+          withProgress({
+            stan_out = stan(file=stan_filename,
+                            data=model_data,
+                            init=model_inits,
+                            iter=2000,
+                            warmup=1000,
+                            chains=1)
+          },
+          value=.5,
+          message="Running MCMC...")
           
           stan_out = extract(stan_out)
           
@@ -159,12 +218,18 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
         } else if(mcmc_sampler == 'jags') {
           
-          jags_out = jags(data = model_data,
-                          inits = model_inits,
-                          model.file=jags_filename,
-                          parameters.to.save = c('mu','tau','lambda','sigma'),
-                          n.chains = 2,
-                          n.iter = 2000)
+          
+          withProgress({
+            jags_out = jags(data = model_data,
+                            inits = model_inits,
+                            model.file=jags_filename,
+                            parameters.to.save = c('mu','tau','lambda','sigma'),
+                            n.chains = 4,
+                            n.iter = 3000)
+          },
+          value=.5,
+          message="Running MCMC...")
+
           
           p_samples = jags_out$BUGSoutput$sims.list
           
@@ -187,51 +252,53 @@ resultsServer <- function(id,vars_in,selected_procedure) {
 
       })
       
-      output$model_text_output = renderUI({
-        # report the basics
+      observeEvent(res, {
         
-        if(is.null(res()$proc_complete)) {
-          return(NULL)
-        }
-        
-        the_proc = selected_procedure()
-        
-        res = res()
-        if(grepl('average',the_proc,TRUE)) {
-          return(
-            tagList(
-              br(),
-              h3(paste(res$method)),
-              h5(paste("Consensus estimate:",round(res$mu,3))),
-              h5(paste("Standard uncertainty:", round(res$se,3))),
-              h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-              h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
-              
+        output$model_text_output = renderUI({
+          # report the basics
+          
+          if(is.null(res()$proc_complete)) {
+            return(NULL)
+          }
+          
+          the_proc = isolate(selected_procedure())
+          
+          res = res()
+          if(grepl('average',the_proc,TRUE)) {
+            return(
+              tagList(
+                h3(paste("Results:",res$method)),
+                h5(paste("Consensus estimate:",round(res$mu,3))),
+                h5(paste("Standard uncertainty:", round(res$se,3))),
+                h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
+                h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
+                
+              )
             )
-          )
-        } else if(grepl('median',the_proc,TRUE)) {
-          return(
-            tagList(
-              br(),
-              h3(paste(res$method)),
-              h5(paste("Consensus estiamte"),round(res$mu,3)),
-              h5(paste("Standard uncertainty:", round(res$se,3))),
-              h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep=''))
+          } else if(grepl('median',the_proc,TRUE)) {
+            return(
+              tagList(
+                br(),
+                h3(paste("Results:",res$method)),
+                h5(paste("Consensus estiamte"),round(res$mu,3)),
+                h5(paste("Standard uncertainty:", round(res$se,3))),
+                h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep=''))
+              )
             )
-          )
-        } else {
-          return(
-            tagList(
-              br(),
-              h3(paste(res$method)),
-              h5(paste("Consensus estimate:",round(res$mu,3))),
-              h5(paste("Standard uncertainty:", round(res$se,3))),
-              h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-              h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
+          } else {
+            return(
+              tagList(
+                br(),
+                h3(paste("Results:",res$method)),
+                h5(paste("Consensus estimate:",round(res$mu,3))),
+                h5(paste("Standard uncertainty:", round(res$se,3))),
+                h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
+                h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
+              )
             )
-          )
-        }
-
+          }
+          
+        })
         
       })
       
@@ -267,8 +334,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
       output$model_plot_v2 = renderPlot({
         
         res = res()
-        vars_in = as.data.frame(vars_in())
-        the_proc = selected_procedure()
+        vars_in = vars_in()
+        the_proc = isolate(selected_procedure())
         
         if(grepl('recommend',the_proc,ignore.case = T)) {
           the_proc = strsplit(the_proc,'\\(')[[1]][1]

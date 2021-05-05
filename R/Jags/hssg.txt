@@ -2,27 +2,26 @@ model {
   
   # priors 
   mu ~ dnorm(0.0, 1.0E-10)
-  tau ~ dt(0, 1/tauPriorScale^2, 1)T(0,)
+  tau ~ dt(0, 1/med_abs_dif^2, 1)T(0,)
   gamma ~ dexp(1) # skewness parameter
   
   C = 10000
    
   
-  for(j in 1:n) {
+  for(j in 1:N) {
     
     # prior on variances
-    ui[j] ~ dt(0,1/u_prior_scale^2,1)T(0,)
+    sigma[j] ~ dt(0,1/med_abs_dif^2,1)T(0,)
     
     # distribution of lab means
     # (using "zero's trick")
-    xi[j] ~ dunif(-100000,100000)
+    lambda[j] ~ dunif(-100000,100000)
     z[j] ~ dpois(phi[j])
-    phi[j] <- -(log(2/(gamma + 1/gamma)) + logdensity.t(xi[j]*gamma^(ifelse(xi[j]<0,1,-1)),mu,1/tau^2,dof[j])) + C
+    phi[j] <- -(log(2/(gamma + 1/gamma)) + logdensity.t(lambda[j]*gamma^(ifelse(lambda[j]<0,1,-1)),mu,1/tau^2,dof[j])) + C
 
-    
     # likelihood for observed data (lab means and variances)
-    x[j] ~ dnorm(xi[j], 1/ui[j]^2 )
-    s2[j] ~ dgamma(dof[j]/2,dof[j]/(2*ui[j]^2) )
+    x[j] ~ dnorm(lambda[j], 1/sigma[j]^2 )
+    u2[j] ~ dgamma(dof[j]/2,dof[j]/(2*sigma[j]^2) )
   }
   
 }

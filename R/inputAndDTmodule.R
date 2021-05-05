@@ -2,48 +2,19 @@ inputUI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    
     br(),
-    fluidRow(column(4,textInput(ns('mv'),'Measured Values',value='1,2,3,5'))),
-    fluidRow(column(4,textInput(ns('su'),"Standard Uncertainties",value='1,1,1,2'))),
-    fluidRow(column(4,textInput(ns('df'),"Degrees of Freedom",value='5,6,7,8'))),
+    rHandsontableOutput(ns("hot")),
+    br(),
+    #fluidRow(column(4,textInput(ns('mv'),'Measured Values',value='1,2,3,5'))),
+    #fluidRow(column(4,textInput(ns('su'),"Standard Uncertainties",value='1,1,1,2'))),
+    #fluidRow(column(4,textInput(ns('df'),"Degrees of Freedom",value='5,6,7,8'))),
     fluidRow(column(1,actionButton(ns('validate'),"Go"))),
-    br(),
+    #br(),
     fluidRow(column(4,uiOutput(ns('validate_msg'))))
     #fluidRow(column(4,textOutput(ns('go_message'))))
   )
 
-}
-
-
-DT_UI <- function(id) {
-  ns <- NS(id)
-  
-  tagList(
-    br(),
-    fluidRow(
-      column(4,
-             uiOutput(ns('Q_test_heading')),
-             verbatimTextOutput(ns('Q_output')),
-             uiOutput(ns('Q_prompt')),
-             br(),
-             uiOutput(ns('step_2_heading')),
-             verbatimTextOutput(ns('step_2_output')),
-             uiOutput(ns('step_2_prompt')),
-             br(),
-             uiOutput(ns('step_3_heading')),
-             verbatimTextOutput(ns('step_3_output')),
-             uiOutput(ns('step_3_prompt')),
-             textOutput(ns('plc_step3'))
-      ),
-      column(width=6,offset=1,
-             fluidRow(imageOutput(ns('dt'),inline=TRUE)),
-             br(),
-             fluidRow(uiOutput(ns("recommendation"))),
-             br(),
-             uiOutput(ns('procedure_prompt'))
-             ))
-    
-  )
 }
 
 
@@ -54,24 +25,54 @@ input_server <- function(id) {
   moduleServer(
     id,
     function(input,output,session) {
+      
+      output$hot <- renderRHandsontable({
+        
+        init.df = data.frame(include=c(T,T,T,F),
+                             lab = c("Lab 1","Lab 2", "Lab 3", "Lab 4"), 
+                             result=c(1,2,3,4), 
+                             uncertainty=c(1,1,2,2),
+                             dof=c(10,10,10,10))
+        
+        
+        if(is.null(input$hot)) { DF = init.df } else { DF = hot_to_r(input$hot) }  
+        
+        names(DF) <- c('Include?','Laboratory','Result','Uncertainty','Degrees of Freedom')
+        myindex = which(DF[,1]==F)-1
+        rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE, myindex = myindex) %>%
+          hot_context_menu(allowColEdit = FALSE ) %>%
+          hot_validate_numeric(cols=3:4) %>%
+          hot_col(2, format = '', halign = 'htCenter', valign = 'htTop') %>%
+          hot_col(1, halign = 'htCenter') %>%
+          hot_col(c(3,4,5), format = "0.000000", halign = 'htCenter') %>%
+          #hot_col(c(3,4), format = paste0("0.", paste0(rep(0, 5), collapse='')), halign = 'htCenter') %>%
+          hot_col(c(2,3,4,5), renderer = "function(instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            if (instance.params) {
+            hrows = instance.params.myindex
+            hrows = hrows instanceof Array ? hrows : [hrows] 
+          }
+          if (instance.params && hrows.includes(row)) {td.style.background = 'lightpink';}
+          else {td.style.background = 'darkseagreen';  }
+        }
+        ") %>%
+          hot_col(1, type = 'checkbox')
+        
+      })
 
       # format input variables
       init <- eventReactive(input$validate, {
-        
-        mv_check = has_correct_format(input$mv)  
-        
-        su_check = has_correct_format(input$su)  
-        
-        dof_check = has_correct_format(input$df)
       
         
-        if(!all(mv_check,su_check,dof_check)) {
-          return("Formatting Error. Each input should follow the format <number>, <number>, ..., <number>.")
-        }
+        #mv_check = has_correct_format(input$mv) # <- previous code for text input
+      
+        the_data = hot_to_r(input$hot)
         
-        measured_vals = as.numeric(strsplit(input$mv,',')[[1]])
-        standard_unc = as.numeric(strsplit(input$su,',')[[1]])
-        dof = as.numeric(strsplit(input$df,',')[[1]])
+        which_to_compute = the_data$`Include?`
+        measured_vals = as.numeric(the_data$Result)[which_to_compute]
+        standard_unc = as.numeric(the_data$Uncertainty)[which_to_compute]
+        dof = as.numeric(the_data$`Degrees of Freedom`)[which_to_compute]
+        dof[is.na(dof)] = 10000
         
         
         if(any(dof < 1)) {
@@ -82,8 +83,6 @@ input_server <- function(id) {
           return("Standard uncertainties must be positive.")
         }
         
-
-        
         n1 = length(measured_vals)
         n2 = length(standard_unc)
         n3 = length(dof)
@@ -92,13 +91,14 @@ input_server <- function(id) {
           return("Unequal number of entries. Each field should have the same number of input quantities.")
         }
         
-        if(n1 < 3) {
+        if(sum(which_to_compute) < 3) {
           return("Need at least 3 observations to use the decision tree.")
         }
         
         return(list(measured_vals=measured_vals,
                     standard_unc=standard_unc,
-                    dof=dof))
+                    dof=dof,
+                    the_data=the_data))
       })
       
       vars_in <- eventReactive(init(), {
@@ -132,6 +132,38 @@ input_server <- function(id) {
 
       return(vars_in)
     }
+  )
+}
+
+
+DT_UI <- function(id) {
+  ns <- NS(id)
+  
+  tagList(
+    br(),
+    fluidRow(
+      column(4,
+             uiOutput(ns('Q_test_heading')),
+             verbatimTextOutput(ns('Q_output')),
+             uiOutput(ns('Q_prompt')),
+             br(),
+             uiOutput(ns('step_2_heading')),
+             verbatimTextOutput(ns('step_2_output')),
+             uiOutput(ns('step_2_prompt')),
+             br(),
+             uiOutput(ns('step_3_heading')),
+             verbatimTextOutput(ns('step_3_output')),
+             uiOutput(ns('step_3_prompt')),
+             textOutput(ns('plc_step3'))
+      ),
+      column(width=6,offset=1,
+             fluidRow(imageOutput(ns('dt'),inline=TRUE)),
+             br(),
+             fluidRow(uiOutput(ns("recommendation"))),
+             br(),
+             uiOutput(ns('procedure_prompt'))
+      ))
+    
   )
 }
 
@@ -199,23 +231,23 @@ DT_server <- function(id,vars_in) {
         not_recommended = all_tests[all_tests != recommended_test]
         
         tagList(
-          h5("Click 'Go' to run the selected procedure, then proceed to the 'Results' Tab:"),
+          h5("Choose the desired procedure below, then proceed to the 'Results' Tab."),
           selectInput(session$ns('user_selected_procedure'),
                       label=NULL,
                       choices=c(paste(recommended_test,'(recommended)'),
                                 not_recommended),
                       selected=paste(recommended_test,'(recommended)'),
-                      width='100%'),
-          actionButton(session$ns('run_proc'),'Go')
+                      width='100%')
+          #actionButton(session$ns('run_proc'),'Go')
         )
 
         
         
       })
       
-      to_return <- eventReactive(input$run_proc,{
-        return(input$user_selected_procedure)
-      })
+      # to_return <- eventReactive(input$run_proc,{
+      #   return(input$user_selected_procedure)
+      # })
       
       # loads decision tree image based on state variables updating
       output$dt <- renderImage({
@@ -344,8 +376,10 @@ DT_server <- function(id,vars_in) {
                            method = "DL")
         
         paste("p = ",signif(res$QEp,4),
-              "; Q = ",signif(res$QE,4),
-              "; DL tau estimate = ",signif(sqrt(res$tau2),4), sep='')
+              "; Q = ",signif(res$QE,4),'\n',
+              "tau est. = ",signif(sqrt(res$tau2),4),'\n',
+              "tau/mu est. = ",signif(sqrt(res$tau2)/res$beta,4),'\n',
+              "tau/median(u) = ",signif(sqrt(res$tau2)/median(standard_unc),4),sep='')
         
       })
 
@@ -545,7 +579,7 @@ DT_server <- function(id,vars_in) {
         }
       })
       
-      return(to_return)
+      return(reactive(input$user_selected_procedure))
     }
   )
 }

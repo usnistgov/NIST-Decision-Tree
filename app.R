@@ -3,7 +3,9 @@ library(shinythemes)
 library(symmetry)
 library(ggplot2)
 #library(rstan)
+#library(shinyjs)
 library(R2jags)
+library(rhandsontable)
 
 #options(mc.cores = parallel::detectCores())
 #rstan_options(auto_write = TRUE)
@@ -19,14 +21,13 @@ ui <- fluidPage(theme=shinytheme('spacelab'),
     
     tabsetPanel(
         
-        tabPanel("Data Input",inputUI('input')),
+        tabPanel("Data Input", inputUI('input')),
         
         tabPanel("Decision Tree",DT_UI('DT')),
         
-        tabPanel("Results",resultsUI('results'))
+        tabPanel("Run Method",resultsUI('results'))
         
     )
-    
     
 )
 
@@ -35,9 +36,9 @@ server <- function(input, output, session) {
     
     vars_in <- input_server('input')
     
-    selected_procedure <- DT_server('DT',vars_in)
+    selected_procedure <- DT_server('DT', vars_in)
     
-    resultsServer('results',vars_in,selected_procedure)
+    resultsServer('results', vars_in, selected_procedure)
     
 }
 
