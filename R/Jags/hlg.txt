@@ -8,7 +8,7 @@ model {
   for(j in 1:N) {
     
     # prior on variances
-    sigma[j] ~ dt(0,1/med_abs_dif^2,1)T(0,)
+    sigma[j] ~ dt(0,1/sigma_prior_scale^2,1)T(0,)
     
     # distribution of lab means
     lambda[j] ~ ddexp(mu, 1/tau^2 )

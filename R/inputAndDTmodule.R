@@ -28,11 +28,11 @@ input_server <- function(id) {
       
       output$hot <- renderRHandsontable({
         
-        init.df = data.frame(include=c(T,T,T,F),
-                             lab = c("Lab 1","Lab 2", "Lab 3", "Lab 4"), 
-                             result=c(1,2,3,4), 
-                             uncertainty=c(1,1,2,2),
-                             dof=c(10,10,10,10))
+        init.df = data.frame(include=c(T,T,T,T,F),
+                             lab = c("Lab 1","Lab 2", "Lab 3", "Lab 4", "Lab 5"), 
+                             result=rt(5,5), 
+                             uncertainty=rexp(5),
+                             dof=c(10,10,10,10,10))
         
         
         if(is.null(input$hot)) { DF = init.df } else { DF = hot_to_r(input$hot) }  
@@ -98,6 +98,7 @@ input_server <- function(id) {
         return(list(measured_vals=measured_vals,
                     standard_unc=standard_unc,
                     dof=dof,
+                    which_to_compute=which_to_compute,
                     the_data=the_data))
       })
       
@@ -154,7 +155,8 @@ DT_UI <- function(id) {
              uiOutput(ns('step_3_heading')),
              verbatimTextOutput(ns('step_3_output')),
              uiOutput(ns('step_3_prompt')),
-             textOutput(ns('plc_step3'))
+             textOutput(ns('plc_step3')),
+             br()
       ),
       column(width=6,offset=1,
              fluidRow(imageOutput(ns('dt'),inline=TRUE)),

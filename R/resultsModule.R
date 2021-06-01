@@ -9,13 +9,19 @@ resultsUI <- function(id) {
     actionButton(ns('run_method'),"Run Method"),
     helpText("Click the above button to run the selected method"),
     br(),
+    hr(),
+    br(),
     uiOutput(ns('model_text_output')),
     br(),
-    fluidRow(plotOutput(ns('model_plot_v2'),width="50%")),
+    fluidRow(
+      column(6,plotOutput(ns('model_plot_v2'))),
+      column(6,plotOutput(ns('doe_plot')))
+    ),
     br(),
     h4("Unilateral Degrees of Equivalence Table"),
     br(),
-    DT::dataTableOutput(ns('doe_table'),width='60%')
+    DT::dataTableOutput(ns('doe_table'),width='60%'),
+    br()
     
   )
   
@@ -64,15 +70,35 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           )
           
         } else if(grepl('median',the_proc,TRUE)) {
-          return(NULL)
-          
-        } else {
-          
-          default = mad(vars_in()$measured_vals)
           
           return(
             tagList(
-              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale",value=default)
+              numericInput(session$ns('num_median_bootstrap'),"Number Bootstrap Runs",value=1000)
+            )
+          )
+          
+        } else if(grepl('(laplace)|(gauss.+gauss)',the_proc,TRUE)) {
+          
+          default_tps = mad(vars_in()$measured_vals)
+          default_sps = median(vars_in()$standard_unc)
+          
+          return(
+            tagList(
+              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale",value=default_tps),
+              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale',value=default_sps)
+            )
+          )
+          
+        } else {
+          
+          default_tps = mad(vars_in()$measured_vals)
+          default_sps = median(vars_in()$standard_unc)
+          
+          return(
+            tagList(
+              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale",value=default_tps),
+              numericInput(session$ns('nu_prior_scale'),"Nu Prior Scale",value=1),
+              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale',value=default_sps)
             )
           )
         }
@@ -129,12 +155,13 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             }
             
             xw = cbind(x, 1/u^2)
-            xm.boot = boot(xw, xm, R=5000)
+            xm.boot = boot(xw, xm, R=input$num_median_bootstrap)
             bootCI = boot.ci(xm.boot, conf=0.95,type='perc')
             res$se = sd(xm.boot$t)
             res$mu_lower = bootCI$percent[4]
             res$mu_upper = bootCI$percent[5]
             res$tau = NULL
+            res$boot_samples = xm.boot
           
           } else {
             
@@ -145,13 +172,14 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             weights = weights/sum(weights)
             b_laplace = sum(abs(x - mu_laplace)*weights)
             
-            nboot = 5000
+            nboot = input$num_median_bootstrap
             boot_samples = rmutil::rlaplace(n=nboot,m=mu_laplace,s=b_laplace)
             
             res$se = sd(boot_samples)
             res$mu_upper = quantile(boot_samples,0.975)
             res$mu_lower = quantile(boot_samples,0.025)
             res$tau = NULL
+            res$boot_samples = boot_samples
             
           } 
           
@@ -177,7 +205,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         } else if(grepl('skew',the_proc,TRUE)) {
           res$method = "Skew Student-Gauss"
           stan_filename = 'R/Stan/hssg.stan'
-          jags_filename = 'R/Jags/hssg.txt'
+          jags_filename = 'R/Jags/hssg2.txt'
         }
           
           
@@ -200,10 +228,23 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                           x=x, 
                           u2=u^2, 
                           dof=dof, 
-                          med_abs_dif=isolate(input$tau_prior_scale))
+                          med_abs_dif=isolate(input$tau_prior_scale),
+                          sigma_prior_scale = isolate(input$sigma_prior_scale))
         
-        if(grepl('skew',the_proc,TRUE) & mcmc_sampler == 'jags') {
-          model_data$z = rep(0,length(model_data$x))
+        parameters_to_save = c('mu','tau','lambda','sigma')
+        
+        if(grepl('skew',the_proc,TRUE) && mcmc_sampler == 'jags') {
+          
+          model_inits = function() {
+            list(mu = mean(x),
+                 tau = sqrt(var(x)),
+                 sigma=u)
+          }
+          
+          model_data$nu_prior_scale = isolate(input$nu_prior_scale)
+          
+          parameters_to_save = c(parameters_to_save,'delta','nu')
+          
         }
         
         if(mcmc_sampler == 'stan') {
@@ -213,9 +254,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             stan_out = stan(file=stan_filename,
                             data=model_data,
                             init=model_inits,
-                            iter=2000,
+                            iter=3000,
                             warmup=1000,
-                            chains=1)
+                            chains=4)
           },
           value=.5,
           message="Running MCMC...")
@@ -225,7 +266,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$mu = mean(stan_out$mu)
           res$mu_upper = quantile(stan_out$mu,.975)
           res$mu_lower = quantile(stan_out$mu,.025)
-          res$se = sqrt(var(stan_out$mu))
+          res$se = sd(stan_out$mu)
           res$tau = mean(stan_out$tau)
           
         } else if(mcmc_sampler == 'jags') {
@@ -235,9 +276,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             jags_out = jags(data = model_data,
                             inits = model_inits,
                             model.file=jags_filename,
-                            parameters.to.save = c('mu','tau','lambda','sigma'),
+                            parameters.to.save = parameters_to_save,
                             n.chains = 4,
-                            n.iter = 3000)
+                            n.iter = 8000,
+                            n.burnin = 3000)
           },
           value=.5,
           message="Running MCMC...")
@@ -248,14 +290,13 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$mu = mean(p_samples$mu)
           res$mu_upper = quantile(p_samples$mu,.975)
           res$mu_lower = quantile(p_samples$mu,.025)
-          res$se = sqrt(var(p_samples$mu))
+          res$se = sd(p_samples$mu)
           res$tau = mean(p_samples$tau)
+          res$p_samples = p_samples
           
         }
 
 
-
-        
         res$proc_complete = TRUE
         
         } 
@@ -362,11 +403,87 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                     data$`Degrees of Freedom`,
                                     data$Laboratory,
                                     isolate(input$num_DL_DOE_bootstrap), # number bootstrap
-                                    TRUE, # LOO
+                                    FALSE, # LOO
                                     .95, # coverage prob
                                     DLres) # dl res
           
           return(doe_res)
+          
+        } else if (grepl('hierarchical',the_proc,TRUE)) {
+          
+          p_samples = res()$p_samples
+          vars_in = vars_in()
+          data = vars_in()$the_data
+          
+          distances = matrix(0,nrow=length(p_samples$mu),ncol=nrow(vars_in()$the_data))
+          colnames(distances) = data$Laboratory
+          
+          included_inds = which(vars_in$which_to_compute)
+          counter = 1
+          
+          # go through each lab
+          for(jj in 1:ncol(distances)) {
+            
+            # if lab was included in MCMC, use MCMC samples 
+            if(vars_in$which_to_compute[jj]) {
+              
+              # lab random effect - KCV 
+              distances[,jj] = p_samples$lambda[,counter] - p_samples$mu
+              counter = counter + 1
+            
+            # if lab not included in model simulate from input data  
+            } else {
+            
+              sd_vec = sqrt(data$Uncertainty^2 + p_samples$tau^2)
+              distances[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec)
+            
+            }
+            
+            
+          }
+          
+          DoE.x = apply(distances,2,mean)
+          DoE.U = apply(distances,2,sd)
+          
+          quants = apply(distances,2,quantile,c(.025,.975))
+          
+          outdf = data.frame(Lab=data$Laboratory,
+                             DoE.x=DoE.x, 
+                             DoE.U95=DoE.U,
+                             DoE.Lwr=quants[1,], 
+                             DoE.Upr=quants[2,])
+          
+          return(list(DoE=outdf))
+          
+        } else if(grepl('median',the_proc,TRUE)) {
+          
+          res = res()
+          data = vars_in()$the_data
+          
+          distances = matrix(0,nrow=length(res$boot_samples),ncol=nrow(data))
+          colnames(distances) = data$Laboratory
+          
+          for(jj in 1:ncol(distances)) {
+            
+            sd_vec = data$Uncertainty
+            
+            distances[,jj] = data$Result[jj] - res$boot_samples + rnorm(length(res$boot_samples),mean=0,sd=sd_vec)
+            
+          }
+          
+          DoE.x = apply(distances,2,mean)
+          DoE.U = apply(distances,2,sd)
+          
+          quants = apply(distances,2,quantile,c(.025,.975))
+          
+          
+          outdf = data.frame(Lab=data$Laboratory,
+                             DoE.x=data$Result, 
+                             DoE.U95=DoE.U,
+                             DoE.Lwr=quants[1,], 
+                             DoE.Upr=quants[2,])
+          
+          return(list(DoE=outdf))
           
         } else {
           
@@ -376,6 +493,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
       })
       
+      # KCplot
       observeEvent(res, {
         
         output$model_plot_v2 = renderPlot({
@@ -403,6 +521,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
 
       })
       
+      # DoE Table
       observeEvent(doe_res, {
       
         output$doe_table = DT::renderDataTable({
@@ -421,6 +540,23 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           options=list(searching=FALSE,paging=FALSE),
           rownames = FALSE)
         
+      })
+      
+      # DoE Plot
+      observeEvent(doe_res, {
+        
+        output$doe_plot = renderPlot({
+          
+          if(is.null(doe_res())) {
+            return(NULL)
+          }
+          
+          data = doe_res()$DoE
+          
+          return(DoEplot(data,'Unilateral Degrees of Equivalence'))
+          
+        
+        })
       })
       
     }

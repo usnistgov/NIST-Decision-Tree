@@ -1,21 +1,23 @@
 model {
-
+  
   # priors 
   mu ~ dnorm(0.0, 1.0E-10)
   tau ~ dt(0, 1/med_abs_dif^2, 1)T(0,)
-
-        
+  delta ~ dunif(-1,1) # skewness parameter
+  nu ~ dt(0,1/nu_prior_scale^2,1)T(0,) # heavy tail parameter
+  
   for(j in 1:N) {
     
     # prior on variances
     sigma[j] ~ dt(0,1/sigma_prior_scale^2,1)T(0,)
-    
-    # distribution of lab means
-    lambda[j] ~ dnorm(mu, 1/tau^2 )
-    
+    W[j] ~ dnorm(0,1)T(0,)
+    eps[j] ~ dnorm(0,1)
+    U[j] ~ dgamma(nu/2,nu/2)
+    lambda[j] <- mu + (U[j])^(-1/2)*tau*delta*W[j] + (U[j])^(-1/2)*tau*sqrt(1-delta^2)*eps[j]
+
     # likelihood for observed data (lab means and variances)
     x[j] ~ dnorm(lambda[j], 1/sigma[j]^2 )
     u2[j] ~ dgamma(dof[j]/2,dof[j]/(2*sigma[j]^2) )
   }
-
+  
 }

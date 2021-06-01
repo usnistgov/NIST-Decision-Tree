@@ -17,6 +17,7 @@ source('./R/resultsModule.R')
 source('./R/DOE/DoEUnilateralDL.R')
 source('./R/DOE/sampleFromTau2Dist.R')
 source('./R/DOE/symmetricalBootstrapCI.R')
+source('./R/DOE/KCplotDoEplot.R')
 
 
 ui <- fluidPage(theme=shinytheme('spacelab'),
