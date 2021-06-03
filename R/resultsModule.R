@@ -7,7 +7,7 @@ resultsUI <- function(id) {
     br(),
     uiOutput(ns('prior_options')),
     actionButton(ns('run_method'),"Run Method"),
-    helpText("Click the above button to run the selected method"),
+    helpText("Click the button above to run the selected method. The results will be displayed below."),
     br(),
     hr(),
     br(),
@@ -155,8 +155,13 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             }
             
             xw = cbind(x, 1/u^2)
-            xm.boot = boot(xw, xm, R=input$num_median_bootstrap)
-            bootCI = boot.ci(xm.boot, conf=0.95,type='perc')
+            withProgress({
+              xm.boot = boot(xw, xm, R=input$num_median_bootstrap)
+              bootCI = boot.ci(xm.boot, conf=0.95,type='perc')
+            },
+            value=.5,
+            message='Running Bootstrap...')
+
             res$se = sd(xm.boot$t)
             res$mu_lower = bootCI$percent[4]
             res$mu_upper = bootCI$percent[5]
@@ -176,8 +181,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             boot_samples = rmutil::rlaplace(n=nboot,m=mu_laplace,s=b_laplace)
             
             res$se = sd(boot_samples)
-            res$mu_upper = quantile(boot_samples,0.975)
-            res$mu_lower = quantile(boot_samples,0.025)
+            hw = symmetricalBootstrapCI(boot_samples,res$mu,.95)
+            res$mu_upper = res$mu + hw
+            res$mu_lower = res$mu - hw
             res$tau = NULL
             res$boot_samples = boot_samples
             
@@ -288,8 +294,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           p_samples = jags_out$BUGSoutput$sims.list
           
           res$mu = mean(p_samples$mu)
-          res$mu_upper = quantile(p_samples$mu,.975)
-          res$mu_lower = quantile(p_samples$mu,.025)
+          hw = symmetricalBootstrapCI(p_samples$mu,res$mu,.95)
+          res$mu_upper = res$mu + hw
+          res$mu_lower = res$mu - hw
           res$se = sd(p_samples$mu)
           res$tau = mean(p_samples$tau)
           res$p_samples = p_samples
@@ -355,34 +362,6 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
       })
       
-      # output$model_plot = renderPlot({
-      #   # make plot of values
-      #   
-      #   res = res()
-      #   vars_in = as.data.frame(vars_in())
-      #   vars_in$lab = factor(1:nrow(vars_in))
-      #   vars_in$lower = vars_in$measured_vals - vars_in$standard_unc
-      #   vars_in$upper = vars_in$measured_vals + vars_in$standard_unc
-      #   
-      #   the_proc = selected_procedure()
-      #   
-      #   # consensus value +/- standard error of mu
-      #   gmrib_data = data.frame(x=0:(nrow(vars_in)+1),ymin = res$mu - res$se,ymax=res$mu+res$se)
-      #   
-      #   # plot the raw data
-      #   p = ggplot(vars_in,aes(x=lab,y=measured_vals)) + 
-      #         geom_point() +
-      #         geom_hline(yintercept = res$mu) + # consensus estimate
-      #         geom_errorbar(aes(ymin=lower,ymax=upper),width=.1,size=1) + # user data
-      #         geom_ribbon(data=gmrib_data, 
-      #                     aes(x=x,ymin=ymin,ymax=ymax),inherit.aes = FALSE,alpha=.2) + # KCV confidence interval
-      #         ylab("Measured Value") + 
-      #         xlab("Lab")
-      #   
-      #   return(p)
-      # 
-      #   
-      # })
       
       doe_res = eventReactive(input$run_method, {
         
@@ -398,6 +377,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                level=95,
                                method="DL")
           
+          withProgress({
+          
           doe_res = DoEUnilateralDL(data$Result,
                                     data$Uncertainty,
                                     data$`Degrees of Freedom`,
@@ -406,6 +387,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                     FALSE, # LOO
                                     .95, # coverage prob
                                     DLres) # dl res
+          
+          },
+          value=.5,
+          message='Computing DoE...')
           
           return(doe_res)
           
@@ -434,7 +419,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             # if lab not included in model simulate from input data  
             } else {
             
-              sd_vec = sqrt(data$Uncertainty^2 + p_samples$tau^2)
+              sd_vec = sqrt(data$Uncertainty[jj]^2)
               distances[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec)
             
             }
@@ -445,13 +430,20 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           DoE.x = apply(distances,2,mean)
           DoE.U = apply(distances,2,sd)
           
-          quants = apply(distances,2,quantile,c(.025,.975))
+          quants_lwr = rep(0,ncol(distances))
+          quants_upr = rep(0,ncol(distances))
+          
+          for(ii in 1:ncol(distances)) {
+            hw = symmetricalBootstrapCI(distances[,ii],DoE.x[ii],.95)
+            quants_lwr[ii] = DoE.x[ii] - hw
+            quants_upr[ii] = DoE.x[ii] + hw
+          }
           
           outdf = data.frame(Lab=data$Laboratory,
                              DoE.x=DoE.x, 
                              DoE.U95=DoE.U,
-                             DoE.Lwr=quants[1,], 
-                             DoE.Upr=quants[2,])
+                             DoE.Lwr=quants_lwr, 
+                             DoE.Upr=quants_upr)
           
           return(list(DoE=outdf))
           
@@ -474,14 +466,21 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           DoE.x = apply(distances,2,mean)
           DoE.U = apply(distances,2,sd)
           
-          quants = apply(distances,2,quantile,c(.025,.975))
+          quants_lwr = rep(0,ncol(distances))
+          quants_upr = rep(0,ncol(distances))
+          
+          for(ii in 1:ncol(distances)) {
+            hw = symmetricalBootstrapCI(distances[,ii],DoE.x[ii],.95)
+            quants_lwr[ii] = DoE.x[ii] - hw
+            quants_upr[ii] = DoE.x[ii] + hw
+          }
           
           
           outdf = data.frame(Lab=data$Laboratory,
                              DoE.x=data$Result, 
                              DoE.U95=DoE.U,
-                             DoE.Lwr=quants[1,], 
-                             DoE.Upr=quants[2,])
+                             DoE.Lwr=quants_lwr, 
+                             DoE.Upr=quants_upr)
           
           return(list(DoE=outdf))
           
