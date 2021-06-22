@@ -23,14 +23,15 @@ source('./R/DOE/KCplotDoEplot.R')
 ui <- fluidPage(theme=shinytheme('spacelab'),
     
     titlePanel("Decision Tree for Key Comparisons"),
+    br(),
     
     tabsetPanel(
         
-        tabPanel("Data Input", inputUI('input')),
+        tabPanel("1. Data Input", inputUI('input')),
         
-        tabPanel("Decision Tree",DT_UI('DT')),
+        tabPanel("2. Decision Tree",DT_UI('DT')),
         
-        tabPanel("Run Method",resultsUI('results'))
+        tabPanel("3. Fit Model",resultsUI('results'))
         
     )
     

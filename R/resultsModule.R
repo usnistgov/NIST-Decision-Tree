@@ -84,8 +84,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale",value=default_tps),
-              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale',value=default_sps)
+              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale (Default: mad(x))",value=default_tps),
+              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale (Default: median(u))',value=default_sps)
             )
           )
           
@@ -299,10 +299,11 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$mu_lower = res$mu - hw
           res$se = sd(p_samples$mu)
           res$tau = mean(p_samples$tau)
+          res$tau_lower = quantile(p_samples$tau,.025)
+          res$tau_upper = quantile(p_samples$tau,.975)
           res$p_samples = p_samples
           
         }
-
 
         res$proc_complete = TRUE
         
@@ -331,7 +332,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("Consensus estimate:",round(res$mu,3))),
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-                h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
+                h5(paste("Dark uncertainty (tau)",round(sqrt(res$tau),3), ))
                 
               )
             )
@@ -353,7 +354,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("Consensus estimate:",round(res$mu,3))),
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-                h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
+                h5(paste("Dark uncertainty (tau) : ",round(sqrt(res$tau),3) )),
+                h5(paste("Tau postererior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,3),' ',signif(res$tau_upper,3),')',sep=''))
               )
             )
           }
@@ -510,7 +512,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                  tau=res$tau,
                  kcrv=res$mu, 
                  kcrv.unc=res$se,
-                 lab=paste('Lab',1:length(vars_in$measured_vals)), 
+                 lab=vars_in$the_data$Laboratory[vars_in$which_to_compute], 
                  title=paste("KCV Estimation:",the_proc), 
                  title.placement="left",
                  ylab=NULL, 

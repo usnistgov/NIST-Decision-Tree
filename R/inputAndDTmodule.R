@@ -4,6 +4,21 @@ inputUI <- function(id) {
   tagList(
     
     br(),
+    h3("Data Entry"),
+    p("Directions: Enter your data using the interactive table below.",
+      "The table functions similarly to common spreadsheet software.",
+      "For example, you can copy and paste data from a spreadsheet",
+      "directly into the table below.",
+      "To manually add/remove rows, right click on the table and select the",
+      "desired option.",
+      "Labs in rows with a the option checked will be taken into account for the",
+      "KCV computation. Labs in rows left unchecked will not be used in the KCV",
+      "computation, but their degrees of equivalence will be computed."),
+    br(),
+    p("When you have finished entering the data into the table,",
+      "click the 'Go' button to confirm your selections. Then proceed to the",
+      "'Decision Tree' tab."),
+    br(),
     rHandsontableOutput(ns("hot")),
     br(),
     #fluidRow(column(4,textInput(ns('mv'),'Measured Values',value='1,2,3,5'))),
@@ -119,7 +134,7 @@ input_server <- function(id) {
           
           if(is.list(init())) {
             return(
-              h5("Valid inputs. Proceed to next tab.",style='color:#009900')
+              h5("Valid inputs. Proceed to the next tab (Decision Tree).",style='color:#009900')
               )
             
           } else{
@@ -233,7 +248,7 @@ DT_server <- function(id,vars_in) {
         not_recommended = all_tests[all_tests != recommended_test]
         
         tagList(
-          h5("Choose the desired procedure below, then proceed to the 'Results' Tab."),
+          h5("Choose the desired procedure below, then proceed to the 'Fit Model' Tab above."),
           selectInput(session$ns('user_selected_procedure'),
                       label=NULL,
                       choices=c(paste(recommended_test,'(recommended)'),
@@ -377,10 +392,19 @@ DT_server <- function(id,vars_in) {
                            sei = standard_unc,
                            method = "DL")
         
-        paste("p = ",signif(res$QEp,4),
-              "; Q = ",signif(res$QE,4),'\n',
+        pval = signif(res$QEp,2)
+        
+        if(pval < .001) {
+          pval = 'p < 0.001'
+        }
+        
+        Q_test_dof = length(measured_vals) - 1
+        
+        paste("p-value = ",pval, '\n',
+              "Q = ",signif(res$QE,4),' (Reference Distribution: Chi-Square with',
+              Q_test_dof,'Degrees of Freedom)','\n',
               "tau est. = ",signif(sqrt(res$tau2),4),'\n',
-              "tau/mu est. = ",signif(sqrt(res$tau2)/res$beta,4),'\n',
+              "tau/median(x) = ",signif(sqrt(res$tau2)/median(measured_vals),4),'\n',
               "tau/median(u) = ",signif(sqrt(res$tau2)/median(standard_unc),4),sep='')
         
       })
@@ -448,7 +472,7 @@ DT_server <- function(id,vars_in) {
           output$step_2_heading= renderUI({
             tagList(
               #h5("Homogeneity not assumed."),
-              h5("Step 2: Miao, Gel and Gastwirth test of symmetry:")
+              h5("Step 2: Miao-Gel-Gastwirth test of symmetry:")
             )
           })
           
