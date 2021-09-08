@@ -173,7 +173,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             res$method = "Weighted Median with Parametric (Laplace) Bootrap"
             
             mu_laplace = res$mu
-            weights = 1/u
+            weights = 1/u^2
             weights = weights/sum(weights)
             b_laplace = sum(abs(x - mu_laplace)*weights)
             
@@ -325,6 +325,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           the_proc = isolate(selected_procedure())
           
           res = res()
+
           if(grepl('average',the_proc,TRUE)) {
             return(
               tagList(
@@ -332,7 +333,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("Consensus estimate:",round(res$mu,3))),
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-                h5(paste("Dark uncertainty (tau)",round(sqrt(res$tau),3), ))
+                h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
                 
               )
             )
