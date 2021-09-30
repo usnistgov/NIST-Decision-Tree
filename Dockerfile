@@ -14,5 +14,3 @@ RUN R -e "install.packages('DT')"
 COPY . /srv/shiny-server/
 
 EXPOSE 3838
-
-CMD R -e 'shiny::runApp(port = 3838, host = "0.0.0.0")'
