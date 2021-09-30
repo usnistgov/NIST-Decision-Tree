@@ -1,4 +1,4 @@
-# NIST Decision Tree (NDT)
+# NIST Decision Tree (NDT) for Interlaboratory Comparisons
 
 
 ## Using NDT
