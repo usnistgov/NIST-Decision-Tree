@@ -1,6 +1,6 @@
 # NIST Decision Tree (NDT) for Key Comparisons
 
-This software describes a Decision Tree intended to guide the selection of statistical models and data reduction procedures in key comparisons (KCs). For more information, see: https://www.nist.gov/publications/decision-tree-key-comparisons
+The NDT provides a recommendation for the procedure to use to reduce measurement results from an interlaboratory study or key comparison, and will then perform such reduction using the procedure chosen by the user, which can be the one the NDT recommended or any other that is implemented in the NDT. For more information, see: https://www.nist.gov/publications/decision-tree-key-comparisons
 
 Reference:  
 Possolo A, Koepke A, Newton D, Winchester MR (2021) *Decision Tree for Key Comparisons.*  J Res Natl Inst Stan 126:126007. https://doi.org/10.6028/jres.126.007.
