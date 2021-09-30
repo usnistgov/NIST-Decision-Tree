@@ -25,3 +25,5 @@ docker rm -f my_container
 ```
 
 Alternatively, you can run, stop, and remove the container using the Docker Desktop application.
+
+For questions or bug reports regarding the software, please contact david.newton@nist.gov.
