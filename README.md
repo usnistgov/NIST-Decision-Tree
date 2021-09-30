@@ -3,6 +3,7 @@
 This software describes a Decision Tree intended to guide the selection of statistical models and data reduction procedures in key comparisons (KCs). For more information, see: https://www.nist.gov/publications/decision-tree-key-comparisons
 
 Reference:
+
 Possolo A, Koepke A, Newton D, Winchester MR (2021) *Decision Tree for Key Comparisons.*
 J Res Natl Inst Stan 126:126007. https://doi.org/10.6028/jres.126.007.
 
