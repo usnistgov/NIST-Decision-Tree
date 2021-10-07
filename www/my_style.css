@@ -1,0 +1,180 @@
+/* Css Reset ==================================== */
+html, body, div, img, p, table, thead, tbody, tfoot, tr,td,tt, h1,h2,h3,h4,h5,h6, a, span, fieldset  {
+	margin:10;
+	padding:00;
+	border:00;
+	outline:none;
+}
+html, body{
+	margin:00;
+	height: 100%;
+}
+
+body {
+
+	font-family: 'Lato', Times, 'Times New Roman', serif;
+	font-size: 16px;
+	font-family: "Source Sans Pro",Helvetica,Arial,sans-serif;
+
+}
+
+#fullpage
+{
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	margin:00;
+	padding:00;
+}
+
+
+#content {
+	flex: 1 0 auto;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 90em;
+	width: 80%;
+}
+
+#page-container {
+  position: relative;
+  min-height: 100vh;
+}
+
+
+h4.title{
+	margin-left:20rem;
+	font-size: 28px;
+	margin-top:0.7rem;
+	min-width: 20rem;
+	color: #eee;
+	cursor: pointer;
+
+}
+
+h4 {
+  font-weight: bold;
+}
+
+
+h5.title{
+	margin-right:1rem;
+	color: #eee;
+	margin-left: auto;
+	cursor: pointer;
+}
+
+
+/*####-Nist Header*/
+.nist-header
+{
+	min-height: 58px;
+	max-height: 58px;
+	background: black;
+	width: 100%;
+}
+.nist-header__logo {
+	position: absolute;
+	top: 12px;
+	left: 10px;
+	z-index: 100;
+	padding: 0;
+	margin-left: 5rem;
+	width: 110px;
+	height: 30px;
+}
+
+.nist-header__title {
+	display:flex;
+}
+
+/*####-Nist Footer*/
+
+
+.nist-footer {
+	background: #333333;
+	z-index: 200;
+	font-family: "Source Sans Pro", Helvetica, Arial, sans-serif;
+	box-sizing: border-box;
+	position: relative;
+	bottom: 0;
+	color: white;
+	padding: 2rem 0rem 2rem 0rem;
+}
+
+.nist-footer__inner {
+	margin-left: auto;
+	margin-right: auto;
+	/*! max-width: 1200px; */
+	padding-right: 16px;
+	padding-right: 1rem;
+	padding-left: 16px;
+	padding-left: 1rem;
+}
+
+.nist-footer__inner:after {
+	content: "";
+	display: table;
+	clear: both;
+}
+
+
+.nist-footer a {
+	color: white;
+	text-decoration: none;
+}
+
+
+
+.nist-footer__menu {
+	clear: both;
+	margin-bottom:0px;
+	max-width: 800px;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.nist-footer__menu.first {
+	padding-top: 20.8px;
+	padding-top: 1.3rem;
+}
+
+.nist-footer__menu ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	text-align: center;
+}
+
+.nist-footer__menu-item {
+	display: inline-block;
+	font-size: 14.4px;
+	font-size: 0.9rem;
+	padding: 0;
+	margin-left: 0;
+}
+
+.nist-footer__menu-item:after {
+	content: '|';
+	margin-right: 1.6px;
+	margin-right: 0.1rem;
+	display: inherit;
+	position: static;
+	font: inherit;
+	line-height: inherit;
+	color: inherit;
+}
+
+.nist-footer__menu-item:last-child:after {
+	content: none;
+}
+
+.nist-footer__menu-item a {
+	font-weight: normal;
+	margin-right: 6.4px;
+	margin-right: 0.4rem;
+	/*white-space: nowrap;*/
+	padding: 0.1em 0;
+	display: inline-block;
+	font-size: 10px;
+}

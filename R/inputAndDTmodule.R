@@ -21,13 +21,10 @@ inputUI <- function(id) {
     br(),
     rHandsontableOutput(ns("hot")),
     br(),
-    #fluidRow(column(4,textInput(ns('mv'),'Measured Values',value='1,2,3,5'))),
-    #fluidRow(column(4,textInput(ns('su'),"Standard Uncertainties",value='1,1,1,2'))),
-    #fluidRow(column(4,textInput(ns('df'),"Degrees of Freedom",value='5,6,7,8'))),
     fluidRow(column(1,actionButton(ns('validate'),"Go"))),
-    #br(),
-    fluidRow(column(4,uiOutput(ns('validate_msg'))))
+    fluidRow(column(4,uiOutput(ns('validate_msg')))),
     #fluidRow(column(4,textOutput(ns('go_message'))))
+    br()
   )
 
 }
@@ -179,7 +176,12 @@ DT_UI <- function(id) {
              fluidRow(uiOutput(ns("recommendation"))),
              br(),
              uiOutput(ns('procedure_prompt'))
-      ))
+      )),
+  
+  br(),
+  br(),
+  br(),
+  br()
     
   )
 }
