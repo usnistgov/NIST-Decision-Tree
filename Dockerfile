@@ -13,6 +13,6 @@ RUN R -e "install.packages('DT')"
 
 COPY . /srv/shiny-server/
 
-RUN sudo chown -R 777 /srv/shiny-server
+RUN chown -R 777 /srv/shiny-server
 
 EXPOSE 3838
