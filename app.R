@@ -25,8 +25,7 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
     ### styling
     tags$link(rel="stylesheet",href="nist_style.css"),
     
-    HTML( '<script src="https://pages.nist.gov/nist-header-footer/js/nist-header-footer.js" type="text/javascript" defer="defer"></script>'),
-    
+    HTML( '<script src="header_footer.js" type="text/javascript" defer="defer"></script>'),
     column(width=11,
     
     titlePanel("Decision Tree for Key Comparisons"),
