@@ -1,4 +1,5 @@
 inputUI <- function(id) {
+  
   ns <- NS(id)
   
   tagList(
@@ -20,7 +21,13 @@ inputUI <- function(id) {
       "'Decision Tree' tab."),
     br(),
     rHandsontableOutput(ns("hot")),
-    br(),
+    hr(),
+    hr(),
+    p("Alternatively, you may upload a file following the same format as the above table",
+      "(if a file is uploaded, the table above and its values will be ignored)."),
+    fileInput(ns('file_input'),'Upload .csv File',accept='.csv'),
+    hr(),
+    hr(),
     fluidRow(column(1,actionButton(ns('validate'),"Go"))),
     fluidRow(column(4,uiOutput(ns('validate_msg')))),
     #fluidRow(column(4,textOutput(ns('go_message'))))
@@ -49,7 +56,7 @@ input_server <- function(id) {
         
         if(is.null(input$hot)) { DF = init.df } else { DF = hot_to_r(input$hot) }  
         
-        names(DF) <- c('Include?','Laboratory','Result','Uncertainty','Degrees of Freedom')
+        names(DF) <- c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
         myindex = which(DF[,1]==F)-1
         rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE, myindex = myindex) %>%
           hot_context_menu(allowColEdit = FALSE ) %>%
@@ -78,12 +85,25 @@ input_server <- function(id) {
         
         #mv_check = has_correct_format(input$mv) # <- previous code for text input
       
-        the_data = hot_to_r(input$hot)
+        if(is.null(input$file_input)) {
+          the_data = hot_to_r(input$hot)
+          
+        } else {
+          the_data = read.csv(input$file_input$datapath)
+          
+          validate(
+            need(colnames(the_data) == c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom'),
+                 'Column names of the .csv file do not match the expected column names. (See table in Data Upload tab).')
+          )
+          
+          the_data$Include = the_data$Include == "Yes"
+        }
         
-        which_to_compute = the_data$`Include?`
+        
+        which_to_compute = the_data$Include
         measured_vals = as.numeric(the_data$Result)[which_to_compute]
         standard_unc = as.numeric(the_data$Uncertainty)[which_to_compute]
-        dof = as.numeric(the_data$`Degrees of Freedom`)[which_to_compute]
+        dof = as.numeric(the_data$DegreesOfFreedom)[which_to_compute]
         dof[is.na(dof)] = 10000
         
         
@@ -236,11 +256,13 @@ DT_server <- function(id,vars_in) {
       })
       
       output$procedure_prompt = renderUI({
+        
         if(all_false(which_test)) {
           return(NULL)
         }
         
         recommended_test = get_test_name(which_test)
+        
         all_tests = c('Adaptive Weighted Average',
                       'Weighted Median',
                       'Hierarchical Gauss-Gauss',
@@ -263,10 +285,7 @@ DT_server <- function(id,vars_in) {
         
         
       })
-      
-      # to_return <- eventReactive(input$run_proc,{
-      #   return(input$user_selected_procedure)
-      # })
+
       
       # loads decision tree image based on state variables updating
       output$dt <- renderImage({
@@ -403,8 +422,8 @@ DT_server <- function(id,vars_in) {
         Q_test_dof = length(measured_vals) - 1
         
         paste("p-value = ",pval, '\n',
-              "Q = ",signif(res$QE,4),' (Reference Distribution: Chi-Square with',
-              Q_test_dof,'Degrees of Freedom)','\n',
+              "Q = ",signif(res$QE,4),' (Reference Distribution: Chi-Square with ',
+              Q_test_dof,' Degrees of Freedom)','\n',
               "tau est. = ",signif(sqrt(res$tau2),4),'\n',
               "tau/median(x) = ",signif(sqrt(res$tau2)/median(measured_vals),4),'\n',
               "tau/median(u) = ",signif(sqrt(res$tau2)/median(standard_unc),4),sep='')

@@ -6,6 +6,7 @@ library(ggplot2)
 #library(shinyjs)
 library(R2jags)
 library(rhandsontable)
+library(tinytex)
 
 #options(mc.cores = parallel::detectCores())
 #rstan_options(auto_write = TRUE)

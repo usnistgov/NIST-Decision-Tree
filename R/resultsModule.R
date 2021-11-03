@@ -13,6 +13,8 @@ resultsUI <- function(id) {
     br(),
     uiOutput(ns('model_text_output')),
     br(),
+    uiOutput(ns('download_button_ui')),
+    br(),
     fluidRow(
       column(6,plotOutput(ns('model_plot_v2'))),
       column(6,plotOutput(ns('doe_plot')))
@@ -313,6 +315,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
 
       })
       
+      # Text output heading results
       observeEvent(res, {
         
         output$model_text_output = renderUI({
@@ -326,6 +329,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           res = res()
 
+          # DSL
           if(grepl('average',the_proc,TRUE)) {
             return(
               tagList(
@@ -337,6 +341,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 
               )
             )
+            
+          # weighted median
           } else if(grepl('median',the_proc,TRUE)) {
             return(
               tagList(
@@ -347,6 +353,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep=''))
               )
             )
+            
+          # bayes
           } else {
             return(
               tagList(
@@ -356,7 +364,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
                 h5(paste("Dark uncertainty (tau) : ",round(sqrt(res$tau),3) )),
-                h5(paste("Tau postererior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,3),' ',signif(res$tau_upper,3),')',sep=''))
+                h5(paste("Tau postererior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,3),',',signif(res$tau_upper,3),')',sep=''))
               )
             )
           }
@@ -365,7 +373,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
       })
       
-      
+      # degrees of equivalence
       doe_res = eventReactive(input$run_method, {
         
         vars_in = vars_in()
@@ -384,7 +392,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           doe_res = DoEUnilateralDL(data$Result,
                                     data$Uncertainty,
-                                    data$`Degrees of Freedom`,
+                                    data$DegreesOfFreedom,
                                     data$Laboratory,
                                     isolate(input$num_DL_DOE_bootstrap), # number bootstrap
                                     FALSE, # LOO
@@ -560,6 +568,47 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         })
       })
+      
+      output$download_button_ui <- renderUI({
+        
+        res = res()
+        
+        if(is.null(res)) {
+          return(NULL)
+        }
+        
+        downloadButton(session$ns('download_all'),'Download .pdf Report')
+      })
+      
+      output$download_all <- downloadHandler(
+        filename = function() {
+          paste("ResultsDownload.pdf")
+        },
+        
+        content = function(file) {
+          
+          res = res()
+          vars_in = vars_in()
+          the_proc = isolate(selected_procedure())
+          
+          doe_res = doe_res()
+          
+          if(grepl('recommend',the_proc,ignore.case = T)) {
+            the_proc = strsplit(the_proc,'\\(')[[1]][1]
+          }
+          
+          withProgress(message = 'Preparing file for download...', {
+            rmarkdown::render("./R/ResultsDownload.Rmd", 
+                              params = list(res = res,
+                                            vars_in = vars_in,
+                                            the_proc = the_proc,
+                                            doe_res = doe_res))
+          })
+          
+          file.copy('./R/ResultsDownload.pdf',file)
+          
+        }
+      )
       
     }
   )

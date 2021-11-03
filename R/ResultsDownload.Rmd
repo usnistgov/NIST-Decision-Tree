@@ -1,0 +1,120 @@
+---
+title: "NIST Decision Tree Report"
+output: pdf_document
+params:
+  res: NA
+  vars_in: NA
+  the_proc: NA
+  doe_res: NA
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Summary
+```{r results='asis'}
+res = params$res
+vars_in = params$vars_in
+the_proc = params$the_proc
+doe_res = params$doe_res
+
+cat(paste('Date:', Sys.Date(),'  \n'))
+cat(paste('Selected Procedure:', the_proc,'  \n'))
+
+  # DSL
+if(grepl('average',the_proc,TRUE)) {
+  
+  cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
+  cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
+  cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
+  cat(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3),'  \n' ))
+  
+# weighted median
+} else if(grepl('median',the_proc,TRUE)) {
+
+  cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
+  cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
+  cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
+  
+# bayes
+} else {
+
+  cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
+  cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
+  cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
+  cat(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3),'  \n' ))
+  cat(paste("Tau postererior 0.025 and 0.975 quantiles: ",'(',
+            signif(res$tau_lower,3),',',signif(res$tau_upper,3),')','  \n',sep=''))
+}
+
+
+```
+
+## Decision Tree Hypothesis test results
+```{r}
+measured_vals = vars_in$measured_vals
+standard_unc = vars_in$standard_unc
+dof = vars_in$dof
+
+mf_res = metafor::rma(yi = measured_vals,
+                   sei = standard_unc,
+                   method = "DL")
+
+pval = signif(mf_res$QEp,2)
+
+if(pval < .001) {
+  pval = 'p < 0.001'
+}
+
+Q_test_dof = length(measured_vals) - 1
+
+# shapiro wilk
+mvs = measured_vals
+sus = standard_unc
+sw_res = shapiro.test((mvs-median(mvs))/sus) 
+sym_res = symmetry::symmetry_test(mvs,stat='MGG',bootstrap=TRUE, B=5000) 
+```
+
+Cochran's test for Homogeneity:  
+```{r results='asis'}
+cat(paste("p-value: ",pval,'  \n',
+    "Q = ",signif(mf_res$QE,4),' (Reference Distribution: Chi-Square with ',
+    Q_test_dof,' Degrees of Freedom)','  \n',
+    "tau est. = ",signif(sqrt(mf_res$tau2),4),'  \n',
+    "tau/median(x) = ",signif(sqrt(mf_res$tau2)/median(measured_vals),4),'  \n',
+    "tau/median(u) = ",signif(sqrt(mf_res$tau2)/median(standard_unc),4),'  \n',sep=''))
+
+```
+
+Shapiro-Wilk test for Normality:
+```{r results='asis'}
+cat(paste("p =", signif(sw_res$p.value,3), '  \n'))
+```
+
+Miao-Gel-Gastwirth test of Symmetry:
+```{r results='asis'}
+cat(paste("p =", signif(sym_res$p.value,3)))
+```
+
+## Plots
+```{r, fig.height=5, fig.width=7 }
+
+KCplot(val=vars_in$measured_vals, 
+                 unc=vars_in$standard_unc, 
+                 tau=res$tau,
+                 kcrv=res$mu, 
+                 kcrv.unc=res$se,
+                 lab=vars_in$the_data$Laboratory[vars_in$which_to_compute], 
+                 title=paste("KCV Estimation:",the_proc), 
+                 title.placement="left",
+                 ylab=NULL, 
+                 exclude=NULL)
+```
+
+```{r, fig.height=5, fig.width=7 }
+
+DoEplot(doe_res$DoE,'Unilateral Degrees of Equivalence')
+```
+
