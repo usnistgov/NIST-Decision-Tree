@@ -10,6 +10,7 @@ RUN R -e "install.packages('viridis')"
 RUN R -e "install.packages('R2jags')"
 RUN R -e "install.packages('rhandsontable')"
 RUN R -e "install.packages('DT')"
+RUN R -e "install.packages('tinytex')"
 
 COPY . /srv/shiny-server/
 
