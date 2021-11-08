@@ -23,8 +23,8 @@ inputUI <- function(id) {
     rHandsontableOutput(ns("hot")),
     hr(),
     hr(),
-    p("Alternatively, you may upload a file following the same format as the above table",
-      "(if a file is uploaded, the table above and its values will be ignored)."),
+    p("Alternatively, you may upload a .csv file following the same format as the above table.",
+      '(Column names should read "Laboratory","Result","Uncertainty","DegreesOfFreedom".)'),
     fileInput(ns('file_input'),'Upload .csv File',accept='.csv'),
     hr(),
     hr(),
@@ -45,60 +45,82 @@ input_server <- function(id) {
     id,
     function(input,output,session) {
       
+      file_data <- eventReactive(input$file_input,{
+        
+        if(is.null(input$file_input)) {
+          return(NULL)
+        }
+        
+        the_data = read.csv(input$file_input$datapath,fileEncoding = "UTF-8-BOM")
+        
+        colnames(the_data)[1] = sub('^.\\.\\.','',colnames(the_data)[1])
+        
+        validate(
+          need(colnames(the_data) == c('Laboratory','Result','Uncertainty','DegreesOfFreedom'),
+               paste('Column names of the .csv file do not match the expected column names.',
+                     'Columns headings should read "Laboratory","Result","Uncertainty","DegreesOfFreedom".'))
+        )
+        
+        return(the_data)
+        
+      },ignoreNULL = FALSE)
+      
       output$hot <- renderRHandsontable({
         
-        init.df = data.frame(include=c(T,T,T,T,F),
-                             lab = c("Lab 1","Lab 2", "Lab 3", "Lab 4", "Lab 5"), 
-                             result=rt(5,5), 
-                             uncertainty=rexp(5),
-                             dof=c(10,10,10,10,10))
+        #cat('here \n')
         
+        the_data = file_data()
         
-        if(is.null(input$hot)) { DF = init.df } else { DF = hot_to_r(input$hot) }  
+        if(is.null(the_data)) {
+          
+          init.df = data.frame(include=c(T,T,T,T,F),
+                               lab = c("Lab 1","Lab 2", "Lab 3", "Lab 4", "Lab 5"), 
+                               result=rnorm(5,5,2), 
+                               uncertainty=c(1,2,1,2,1),
+                               dof=c(10,10,10,10,10))
+          
+        } else {
+          
         
+          init.df = data.frame(include=rep(T,nrow(the_data)),
+                               lab = the_data$Laboratory, 
+                               result=the_data$Result, 
+                               uncertainty=the_data$Uncertainty,
+                               dof=the_data$DegreesOfFreedom)
+          
+        }
+          
+        DF = init.df 
         names(DF) <- c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
+        
         myindex = which(DF[,1]==F)-1
+        
         rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE, myindex = myindex) %>%
-          hot_context_menu(allowColEdit = FALSE ) %>%
+          hot_context_menu(allowColEdit = FALSE) %>%
           hot_validate_numeric(cols=3:4) %>%
           hot_col(2, format = '', halign = 'htCenter', valign = 'htTop') %>%
           hot_col(1, halign = 'htCenter') %>%
-          hot_col(c(3,4,5), format = "0.000000", halign = 'htCenter') %>%
+          hot_col(c(3,4), format='0.0000',halign = 'htCenter') %>%
+          hot_col(5, format='0',halign = 'htCenter') %>%
           #hot_col(c(3,4), format = paste0("0.", paste0(rep(0, 5), collapse='')), halign = 'htCenter') %>%
-          hot_col(c(2,3,4,5), renderer = "function(instance, td, row, col, prop, value, cellProperties) {
-            Handsontable.renderers.TextRenderer.apply(this, arguments);
-            if (instance.params) {
-            hrows = instance.params.myindex
-            hrows = hrows instanceof Array ? hrows : [hrows] 
-          }
-          if (instance.params && hrows.includes(row)) {td.style.background = 'lightpink';}
-          else {td.style.background = 'darkseagreen';  }
-        }
-        ") %>%
+        #   hot_col(c(2,3,4,5), renderer = "function(instance, td, row, col, prop, value, cellProperties) {
+        #     Handsontable.renderers.TextRenderer.apply(this, arguments);
+        #     if (instance.params) {
+        #     hrows = instance.params.myindex
+        #     hrows = hrows instanceof Array ? hrows : [hrows] 
+        #   }
+        #   if (instance.params && hrows.includes(row)) {td.style.background = 'lightpink';}
+        #   else {td.style.background = 'darkseagreen';  }
+        # }
+        # ") %>%
           hot_col(1, type = 'checkbox')
         
       })
 
       # format input variables
       init <- eventReactive(input$validate, {
-      
-        
-        #mv_check = has_correct_format(input$mv) # <- previous code for text input
-      
-        if(is.null(input$file_input)) {
-          the_data = hot_to_r(input$hot)
-          
-        } else {
-          the_data = read.csv(input$file_input$datapath)
-          
-          validate(
-            need(colnames(the_data) == c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom'),
-                 'Column names of the .csv file do not match the expected column names. (See table in Data Upload tab).')
-          )
-          
-          the_data$Include = the_data$Include == "Yes"
-        }
-        
+
+        the_data = hot_to_r(input$hot)
         
         which_to_compute = the_data$Include
         measured_vals = as.numeric(the_data$Result)[which_to_compute]
@@ -421,7 +443,7 @@ DT_server <- function(id,vars_in) {
         
         Q_test_dof = length(measured_vals) - 1
         
-        paste("p-value = ",pval, '\n',
+        paste("p-value = ",pval,' (A low p-value suggests heterogeneity).', '\n',
               "Q = ",signif(res$QE,4),' (Reference Distribution: Chi-Square with ',
               Q_test_dof,' Degrees of Freedom)','\n',
               "tau est. = ",signif(sqrt(res$tau2),4),'\n',
@@ -471,7 +493,7 @@ DT_server <- function(id,vars_in) {
             mvs = isolate(vars_in()$measured_vals)
             sus = isolate(vars_in()$standard_unc)
             res = shapiro.test((mvs-median(mvs))/sus) 
-            paste("p:", signif(res$p.value,2))
+            paste("p: ", signif(res$p.value,2),' (A low p-value suggests non-normality.)', sep='')
           })
           
           output$step_2_prompt <- renderUI({
@@ -501,7 +523,7 @@ DT_server <- function(id,vars_in) {
             
             mvs = isolate(vars_in()$measured_vals)
             res = symmetry::symmetry_test(mvs,stat='MGG',bootstrap=TRUE, B=10000) 
-            paste("p:", signif(res$p.value,2))
+            paste("p: ", signif(res$p.value,2), ' (A low p-value suggests asymmetry.)' ,sep='')
           })
           
           output$step_2_prompt <- renderUI({
