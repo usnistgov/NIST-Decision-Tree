@@ -14,6 +14,6 @@ RUN R -e "install.packages('tinytex')"
 
 COPY . /srv/shiny-server/
 
-RUN chown -R 777 /srv/shiny-server
+RUN chmod -R 777 /srv/shiny-server
 
 EXPOSE 3838
