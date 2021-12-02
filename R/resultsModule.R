@@ -460,6 +460,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
         } else if(grepl('median',the_proc,TRUE)) {
           
+          #browser()
+          
           res = res()
           data = vars_in()$the_data
           
@@ -470,7 +472,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             
             sd_vec = data$Uncertainty
             
-            distances[,jj] = data$Result[jj] - res$boot_samples + rnorm(length(res$boot_samples),mean=0,sd=sd_vec)
+            distances[,jj] = data$Result[jj] - res$boot_samples + rnorm(length(res$boot_samples),mean=0,sd=sd_vec[jj])
             
           }
           
@@ -488,7 +490,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           
           outdf = data.frame(Lab=data$Laboratory,
-                             DoE.x=data$Result, 
+                             DoE.x=DoE.x, 
                              DoE.U95=DoE.U,
                              DoE.Lwr=quants_lwr, 
                              DoE.Upr=quants_upr)

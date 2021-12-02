@@ -20,11 +20,13 @@ inputUI <- function(id) {
       "click the 'Go' button to confirm your selections. Then proceed to the",
       "'Decision Tree' tab."),
     br(),
-    rHandsontableOutput(ns("hot")),
+    fluidRow(column(6,br(),br(),br(),br(),rHandsontableOutput(ns("hot")),offset=1),
+             column(5,plotOutput(ns('raw_data_plot')))),
+    br(),
     hr(),
     hr(),
     p("Alternatively, you may upload a .csv file following the same format as the above table.",
-      '(Column names should read "Laboratory","Result","Uncertainty","DegreesOfFreedom".)'),
+      '(Column names should read "Laboratory","Measured Values","Std. Unc","DegreesOfFreedom".)'),
     fileInput(ns('file_input'),'Upload .csv File',accept='.csv'),
     hr(),
     hr(),
@@ -56,9 +58,9 @@ input_server <- function(id) {
         colnames(the_data)[1] = sub('^.\\.\\.','',colnames(the_data)[1])
         
         validate(
-          need(colnames(the_data) == c('Laboratory','Result','Uncertainty','DegreesOfFreedom'),
+          need(colnames(the_data) == c('Laboratory','MeasuredValues','StdUnc','DegreesOfFreedom'),
                paste('Column names of the .csv file do not match the expected column names.',
-                     'Columns headings should read "Laboratory","Result","Uncertainty","DegreesOfFreedom".'))
+                     'Columns headings should read "Laboratory","MeasuredValues","StdUnc","DegreesOfFreedom".'))
         )
         
         return(the_data)
@@ -84,14 +86,14 @@ input_server <- function(id) {
         
           init.df = data.frame(include=rep(T,nrow(the_data)),
                                lab = the_data$Laboratory, 
-                               result=the_data$Result, 
-                               uncertainty=the_data$Uncertainty,
+                               result=the_data$MeasuredValues, 
+                               uncertainty=the_data$StdUnc,
                                dof=the_data$DegreesOfFreedom)
           
         }
           
         DF = init.df 
-        names(DF) <- c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
+        names(DF) <- c('Include','Laboratory','MeasuredValues','StdUnc','DegreesOfFreedom')
         
         myindex = which(DF[,1]==F)-1
         
@@ -101,7 +103,7 @@ input_server <- function(id) {
           hot_col(2, format = '', halign = 'htCenter', valign = 'htTop') %>%
           hot_col(1, halign = 'htCenter') %>%
           hot_col(c(3,4), format='0.0000',halign = 'htCenter') %>%
-          hot_col(5, format='0',halign = 'htCenter') %>%
+          hot_col(5, type = 'numeric', format = '0',halign = 'htCenter') %>%
           #hot_col(c(3,4), format = paste0("0.", paste0(rep(0, 5), collapse='')), halign = 'htCenter') %>%
         #   hot_col(c(2,3,4,5), renderer = "function(instance, td, row, col, prop, value, cellProperties) {
         #     Handsontable.renderers.TextRenderer.apply(this, arguments);
@@ -116,17 +118,43 @@ input_server <- function(id) {
           hot_col(1, type = 'checkbox')
         
       })
+      
+      output$raw_data_plot <- renderPlot({
+        
+        data = hot_to_r(input$hot)
+        
+        if(is.null(data)) {
+          return(NULL)
+        }
+        
+        colnames(data) = c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
+        
+        data$upper = data$Result + data$Uncertainty
+        data$lower = data$Result - data$Uncertainty
+        data$Include = as.character(data$Include)
+        
+        p = ggplot(data,aes(x=Laboratory,y=Result,color=Include)) + 
+          geom_point() +
+          geom_errorbar(aes(ymin=lower,ymax=upper),width=.2) +
+          ylab("Measured Value +/- Std. Uncertainty") + 
+          scale_color_manual(values=c("TRUE"="black","FALSE"="grey50"))
+        
+        p
+      })
 
       # format input variables
       init <- eventReactive(input$validate, {
 
         the_data = hot_to_r(input$hot)
+        colnames(the_data) = c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
         
         which_to_compute = the_data$Include
         measured_vals = as.numeric(the_data$Result)[which_to_compute]
         standard_unc = as.numeric(the_data$Uncertainty)[which_to_compute]
         dof = as.numeric(the_data$DegreesOfFreedom)[which_to_compute]
         dof[is.na(dof)] = 10000
+        the_data$DegreesOfFreedom[is.na(the_data$DegreesOfFreedom)] = 10000
+        
         
         
         if(any(dof < 1)) {
