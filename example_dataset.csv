@@ -1,4 +1,4 @@
-Laboratory,MeasuredValue,StandardUncertainty,DegreesOfFreedom
+Laboratory,MeasuredValues,StdUnc,DegreesOfFreedom
 Lab 1,-2.4434,0.0789,10
 Lab 2,-0.9023,0.0357,10
 Lab 3,-0.0688,0.1611,10
