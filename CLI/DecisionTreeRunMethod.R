@@ -181,10 +181,13 @@ dof = rep(50,n)
 
 res = run_method('AWA',x,u,df) 
 
-res = run_method("WM",x,u,df)
+res = run_method("WM",x,u,dof)
 
-res = run_method("HGG",x,u,df)
+res = run_method("HGG",x,u,dof)
 
+res = run_method("HLG",x,u,dof)
+
+res = run_method("HSSG",x,u,dof)
 
 
   
