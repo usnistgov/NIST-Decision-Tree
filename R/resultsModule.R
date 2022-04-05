@@ -3,11 +3,11 @@ resultsUI <- function(id) {
   
   tagList(
     br(),
+    uiOutput(ns('init_message')),
     uiOutput(ns('method_name')),
     br(),
     uiOutput(ns('prior_options')),
-    actionButton(ns('run_method'),"Run Method"),
-    helpText("Click the button above to run the selected method. The results will be displayed below."),
+    uiOutput(ns('run_text')),
     br(),
     hr(),
     br(),
@@ -34,6 +34,19 @@ resultsServer <- function(id,vars_in,selected_procedure) {
     id,
     function(input,output,session) {
       
+      output$run_text = renderUI({
+        
+        the_proc = selected_procedure()
+        
+        if(is.null(the_proc)) {
+          return(NULL)
+        } 
+        tagList(
+          actionButton(session$ns('run_method'),"Run Method"),
+          helpText("Click the button above to run the selected method. The results will be displayed below."),
+        )
+      })
+      
       output$method_name = renderUI({
         
         the_proc = selected_procedure()
@@ -52,6 +65,19 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
         }
 
+        
+      })
+      
+      output$init_message = renderUI({
+        
+        sp = selected_procedure()
+        
+        if(is.null(sp)) {
+          return(p("Data has not been validated or model has not been selected. Please complete Tabs 1-2 first."))
+        }
+        
+        return(p(""))
+        
         
       })
       
@@ -86,8 +112,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale (Default: mad(x))",value=default_tps),
-              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale (Default: median(u))',value=default_sps)
+              numericInput(session$ns('tau_prior_scale'),"Tau Prior Median (Default: mad(x))",value=default_tps),
+              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median (Default: median(u))',value=default_sps)
             )
           )
           
@@ -98,9 +124,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale",value=default_tps),
-              numericInput(session$ns('nu_prior_scale'),"Nu Prior Scale",value=1),
-              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale',value=default_sps)
+              numericInput(session$ns('tau_prior_scale'),"Tau Prior Median",value=default_tps),
+              numericInput(session$ns('nu_prior_scale'),"Nu Prior Median",value=1),
+              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median',value=default_sps)
             )
           )
         }
@@ -114,6 +140,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         # res expects the following scalar values:
         # mu, mu_upper, mu_lower
         # tau, se (of the mean)
+        
+        jags_params = list(n_iter = 100000,burn_in = 20000, thin=10)
         
         the_proc = selected_procedure()
         res = list()
@@ -172,7 +200,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           } else {
             
-            res$method = "Weighted Median with Parametric (Laplace) Bootrap"
+            res$method = "Weighted Median with Parametric (Laplace) Bootstrap"
             
             mu_laplace = res$mu
             weights = 1/u^2
@@ -180,14 +208,21 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             b_laplace = sum(abs(x - mu_laplace)*weights)
             
             nboot = input$num_median_bootstrap
-            boot_samples = rmutil::rlaplace(n=nboot,m=mu_laplace,s=b_laplace)
+            withProgress({
+              muB = rep(0,nboot)
+              for (k in 1:nboot) {
+                xB = extraDistr::rlaplace(n, mu=x, sigma=u/sqrt(2))
+                muB[k] = spatstat.geom::weighted.median(xB, weights)
+              }
+            },value=.5,
+            message='Running Bootstrap...')
             
-            res$se = sd(boot_samples)
-            hw = symmetricalBootstrapCI(boot_samples,res$mu,.95)
+            res$se = sd(muB)
+            hw = symmetricalBootstrapCI(muB,res$mu,.95)
             res$mu_upper = res$mu + hw
             res$mu_lower = res$mu - hw
             res$tau = NULL
-            res$boot_samples = boot_samples
+            res$boot_samples = muB
             
           } 
           
@@ -201,7 +236,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           # x, u
         
         if(grepl('gauss.+gauss',the_proc,TRUE)) {
-          res$method = "Hierarchical Guass-Gauss"
+          res$method = "Hierarchical Gauss-Gauss"
           stan_filename = 'R/Stan/hgg.stan'
           jags_filename = 'R/Jags/hgg.txt'
           
@@ -286,8 +321,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                             model.file=jags_filename,
                             parameters.to.save = parameters_to_save,
                             n.chains = 4,
-                            n.iter = 8000,
-                            n.burnin = 3000)
+                            n.iter = jags_params$n_iter,
+                            n.burnin = jags_params$burn_in,
+                            n.thin = jags_params$thin)
           },
           value=.5,
           message="Running MCMC...")
@@ -364,7 +400,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
                 h5(paste("Dark uncertainty (tau) : ",round(sqrt(res$tau),3) )),
-                h5(paste("Tau postererior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,3),',',signif(res$tau_upper,3),')',sep=''))
+                h5(paste("Tau posterior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,3),',',signif(res$tau_upper,3),')',sep=''))
               )
             )
           }
@@ -423,7 +459,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             # if lab was included in MCMC, use MCMC samples 
             if(vars_in$which_to_compute[jj]) {
               
-              # lab random effect - KCV 
+              # lab random effect - KC
               distances[,jj] = p_samples$lambda[,counter] - p_samples$mu
               counter = counter + 1
             
@@ -524,7 +560,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                  kcrv=res$mu, 
                  kcrv.unc=res$se,
                  lab=vars_in$the_data$Laboratory[vars_in$which_to_compute], 
-                 title=paste("KCV Estimation:",the_proc), 
+                 title=paste("KC Estimation:",the_proc), 
                  title.placement="left",
                  ylab=NULL, 
                  exclude=NULL)
@@ -579,7 +615,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           return(NULL)
         }
         
-        downloadButton(session$ns('download_all'),'Download .pdf Report')
+        downloadButton(session$ns('download_all'),'Download Report (PDF File)')
       })
       
       output$download_all <- downloadHandler(

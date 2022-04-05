@@ -101,8 +101,6 @@ DecisionTree = function (x, ux, lab,
     ## most appropriate for the measurement results, for the purpose
     ## of computing a key comparison reference value (consensus value)
     ## and degrees of equivalence
-    
-    browser()
 
     z = data.frame(w=x, uw=ux, lab=lab)
 

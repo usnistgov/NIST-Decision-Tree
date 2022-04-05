@@ -25,12 +25,12 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
     
     ### styling
     tags$link(rel="stylesheet",href="my_style.css"),
-    
+
     tags$head(tags$link(rel="shortcut icon", href="./favicon.ico")),
     tags$head(HTML("<title>NIST Decision Tree</title>")),
-    
+
     tags$div(HTML('<class="nist-header">')),
-    
+
     tags$div(HTML("<div class='nist-header'>
                     <div class='nist-header__logo'>
                       <a href='https://www.nist.gov/' title='National Institute of Standards and Technology' class='nist-header__logo-link' rel='home'>
@@ -45,7 +45,7 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
     
     column(width=11,
     
-    titlePanel("Decision Tree for Key Comparisons"),
+    titlePanel("NIST Decision Tree for Key Comparisons"),
     br(),
     
     tabsetPanel(
@@ -62,7 +62,7 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
     ),
     
     ### footer ###
-    
+
     tags$div(HTML("<footer id='footer' class='nist-footer'>
     <div class='nist-footer__inner'>
       <div class='nist-footer__menu' role='navigation'>
@@ -122,7 +122,7 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
       </div>
     </div>
   </footer>"))
-    
+
  ### footer end ###
     
     

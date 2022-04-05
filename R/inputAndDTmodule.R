@@ -13,12 +13,15 @@ inputUI <- function(id) {
       "To manually add/remove rows, right click on the table and select the",
       "desired option.",
       "Labs in rows with a the option checked will be taken into account for the",
-      "KCV computation. Labs in rows left unchecked will not be used in the KCV",
+      "KC computation. Labs in rows left unchecked will not be used in the KC",
       "computation, but their degrees of equivalence will be computed."),
     br(),
     p("When you have finished entering the data into the table,",
-      "click the 'Go' button to confirm your selections. Then proceed to the",
+      "click the 'Validate Data' button to confirm your selections. Then proceed to the",
       "'Decision Tree' tab."),
+    br(),
+    fluidRow(column(1,actionButton(ns('validate'),"Validate Data"))),
+    fluidRow(column(4,uiOutput(ns('validate_msg')))),
     br(),
     fluidRow(column(6,br(),br(),br(),br(),rHandsontableOutput(ns("hot")),offset=1),
              column(5,plotOutput(ns('raw_data_plot')))),
@@ -29,9 +32,6 @@ inputUI <- function(id) {
       '(Column names should read "Laboratory","Measured Values","Std. Unc","DegreesOfFreedom".)'),
     fileInput(ns('file_input'),'Upload .csv File',accept='.csv'),
     hr(),
-    hr(),
-    fluidRow(column(1,actionButton(ns('validate'),"Go"))),
-    fluidRow(column(4,uiOutput(ns('validate_msg')))),
     #fluidRow(column(4,textOutput(ns('go_message'))))
     br()
   )
@@ -75,11 +75,16 @@ input_server <- function(id) {
         
         if(is.null(the_data)) {
           
-          init.df = data.frame(include=c(T,T,T,T,F),
-                               lab = c("Lab 1","Lab 2", "Lab 3", "Lab 4", "Lab 5"), 
-                               result=rnorm(5,5,2), 
-                               uncertainty=c(1,2,1,2,1),
-                               dof=c(10,10,10,10,10))
+          init.df = data.frame(include=c(T,T,T,T,T,T),
+                               lab = c('IRMM',
+                                       'KRISS',
+                                       'NARL',
+                                       'NIST',
+                                       'NMIJ',
+                                       'NRC'), 
+                               result=c(34.3,32.9,34.53,32.42,31.9,35.8), 
+                               uncertainty=c(1.03,0.69,0.83,0.29,0.4,0.38),
+                               dof=c(60,4,18,2,13,60))
           
         } else {
           
@@ -291,7 +296,7 @@ DT_server <- function(id,vars_in) {
         test_names = c('awa','wmed','hgg','hlg','hssg')
         
         if(which_test[[ test_names[1] ]] == 1) {
-          return(h4("Decision Tree recommends Adapted Weighted Average."))
+          return(h4("Decision Tree recommends Adaptive Weighted Average."))
         } else if(which_test[[ test_names[2] ]] == 1) {
           return(h4("Decision Tree recommends Weighted Median."))
         } else if(which_test[[ test_names[3] ]] == 1) {

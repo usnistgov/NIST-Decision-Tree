@@ -15,6 +15,11 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Summary
 ```{r results='asis'}
+
+knitr::kable(
+  vars_in()$the_data
+)
+
 res = params$res
 vars_in = params$vars_in
 the_proc = params$the_proc
@@ -45,7 +50,7 @@ if(grepl('average',the_proc,TRUE)) {
   cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
   cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
   cat(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3),'  \n' ))
-  cat(paste("Tau postererior 0.025 and 0.975 quantiles: ",'(',
+  cat(paste("Tau posterior 0.025 and 0.975 quantiles: ",'(',
             signif(res$tau_lower,3),',',signif(res$tau_upper,3),')','  \n',sep=''))
 }
 
@@ -107,7 +112,7 @@ KCplot(val=vars_in$measured_vals,
                  kcrv=res$mu, 
                  kcrv.unc=res$se,
                  lab=vars_in$the_data$Laboratory[vars_in$which_to_compute], 
-                 title=paste("KCV Estimation:",the_proc), 
+                 title=paste("KC Estimation:",the_proc), 
                  title.placement="left",
                  ylab=NULL, 
                  exclude=NULL)
@@ -116,5 +121,9 @@ KCplot(val=vars_in$measured_vals,
 ```{r, fig.height=5, fig.width=7 }
 
 DoEplot(doe_res$DoE,'Unilateral Degrees of Equivalence')
+
+knitr::kable(
+  doe_res()$DoE
+)
 ```
 
