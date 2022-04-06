@@ -529,7 +529,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                  kcrv=res$mu, 
                  kcrv.unc=res$se,
                  lab=vars_in$the_data$Laboratory[vars_in$which_to_compute], 
-                 title=paste("KC Estimation:",the_proc), 
+                 title=paste("KCRV Estimation:",the_proc), 
                  title.placement="left",
                  ylab=NULL, 
                  exclude=NULL)

@@ -13,7 +13,7 @@ inputUI <- function(id) {
       "To manually add/remove rows, right click on the table and select the",
       "desired option.",
       "Labs in rows with a the option checked will be taken into account for the",
-      "KC computation. Labs in rows left unchecked will not be used in the KC",
+      "KCRV computation. Labs in rows left unchecked will not be used in the KCRV",
       "computation, but their degrees of equivalence will be computed."),
     br(),
     p("When you have finished entering the data into the table,",
@@ -29,7 +29,7 @@ inputUI <- function(id) {
     hr(),
     hr(),
     p("Alternatively, you may upload a .csv file following the same format as the above table.",
-      '(Column names should read "Laboratory","Measured Values","Std. Unc","DegreesOfFreedom".)'),
+      '(Column names should read "Laboratory","MeasuredValues","StdUnc","DegreesOfFreedom".)'),
     fileInput(ns('file_input'),'Upload .csv File',accept='.csv'),
     hr(),
     #fluidRow(column(4,textOutput(ns('go_message'))))
