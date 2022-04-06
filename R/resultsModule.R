@@ -174,57 +174,26 @@ resultsServer <- function(id,vars_in,selected_procedure) {
 
         } else if(grepl('median',the_proc,TRUE)) {
           
-          res$mu = spatstat.geom::weighted.median(x, 1/u^2)
-          
           if(length(x) >= 12) {
             
             res$method = "Weighted Median with Nonparametric Bootstrap"
-            
-            xm = function (xw,i) {
-              spatstat::weighted.median(xw[i,1], xw[i,2])
-            }
-            
-            xw = cbind(x, 1/u^2)
-            withProgress({
-              xm.boot = boot(xw, xm, R=input$num_median_bootstrap)
-              bootCI = boot.ci(xm.boot, conf=0.95,type='perc')
-            },
-            value=.5,
-            message='Running Bootstrap...')
-
-            res$se = sd(xm.boot$t)
-            res$mu_lower = bootCI$percent[4]
-            res$mu_upper = bootCI$percent[5]
-            res$tau = NULL
-            res$boot_samples = xm.boot
+  
           
           } else {
             
             res$method = "Weighted Median with Parametric (Laplace) Bootstrap"
-            
-            mu_laplace = res$mu
-            weights = 1/u^2
-            weights = weights/sum(weights)
-            b_laplace = sum(abs(x - mu_laplace)*weights)
-            
-            nboot = input$num_median_bootstrap
-            withProgress({
-              muB = rep(0,nboot)
-              for (k in 1:nboot) {
-                xB = extraDistr::rlaplace(n, mu=x, sigma=u/sqrt(2))
-                muB[k] = spatstat.geom::weighted.median(xB, weights)
-              }
-            },value=.5,
-            message='Running Bootstrap...')
-            
-            res$se = sd(muB)
-            hw = symmetricalBootstrapCI(muB,res$mu,.95)
-            res$mu_upper = res$mu + hw
-            res$mu_lower = res$mu - hw
-            res$tau = NULL
-            res$boot_samples = muB
-            
+          
           } 
+          
+          bt_res = DTweightedMedian(x=x, ux=u, nux=dof, K=5000, conf.level=0.95,
+                                    bootstrap=NULL, print=FALSE)
+          
+          res$mu = bt_res$m
+          res$se = bt_res$um
+          res$mu_upper = bt_res$Upr
+          res$mu_lower = bt_res$Lwr
+          res$tau = NULL
+          res$boot_samples = bt_res$muB
           
           
           res$proc_complete = TRUE

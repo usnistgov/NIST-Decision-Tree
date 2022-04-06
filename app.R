@@ -7,9 +7,8 @@ library(ggplot2)
 library(R2jags)
 library(rhandsontable)
 library(tinytex)
+# also need boot, extraDistr, rmarkdown, knitr
 
-#options(mc.cores = parallel::detectCores())
-#rstan_options(auto_write = TRUE)
 
 source('./R/utils.R')
 source('./R/inputAndDTmodule.R')
