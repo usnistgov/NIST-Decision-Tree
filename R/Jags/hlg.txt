@@ -11,7 +11,7 @@ model {
     sigma[j] ~ dt(0,1/sigma_prior_scale^2,1)T(0,)
     
     # distribution of lab means
-    lambda[j] ~ ddexp(mu, 1/tau^2 )
+    lambda[j] ~ ddexp(mu, 2/tau^2 )
     
     # likelihood for observed data (lab means and variances)
     x[j] ~ dnorm(lambda[j], 1/sigma[j]^2 )
