@@ -34,7 +34,7 @@ if(grepl('average',the_proc,TRUE)) {
   cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
   cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
   cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
-  cat(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3),'  \n' ))
+  cat(paste("Dark uncertainty (tau): ",round(res$tau,3),'  \n' ))
   
 # weighted median
 } else if(grepl('median',the_proc,TRUE)) {
@@ -49,7 +49,7 @@ if(grepl('average',the_proc,TRUE)) {
   cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
   cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
   cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
-  cat(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3),'  \n' ))
+  cat(paste("Dark uncertainty (tau): ",round(res$tau,3),'  \n' ))
   cat(paste("Tau posterior 0.025 and 0.975 quantiles: ",'(',
             signif(res$tau_lower,3),',',signif(res$tau_upper,3),')','  \n',sep=''))
 }

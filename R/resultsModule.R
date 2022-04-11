@@ -300,6 +300,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           p_samples = jags_out$BUGSoutput$sims.list
           
+          
           res$mu = mean(p_samples$mu)
           hw = symmetricalBootstrapCI(p_samples$mu,res$mu,.95)
           res$mu_upper = res$mu + hw
@@ -342,7 +343,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("Consensus estimate:",round(res$mu,3))),
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-                h5(paste("Dark uncertainty (tau): ",round(sqrt(res$tau),3) ))
+                h5(paste("Dark uncertainty (tau): ",round(res$tau,3) ))
                 
               )
             )
@@ -368,7 +369,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h5(paste("Consensus estimate:",round(res$mu,3))),
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-                h5(paste("Dark uncertainty (tau) : ",round(sqrt(res$tau),3) )),
+                h5(paste("Dark uncertainty (tau) : ",round(res$tau,3) )),
                 h5(paste("Tau posterior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,3),',',signif(res$tau_upper,3),')',sep=''))
               )
             )
