@@ -93,6 +93,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
+              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
               numericInput(session$ns('num_DL_DOE_bootstrap'),"Number Bootstrap for DOE",value=1000)
             )
           )
@@ -101,6 +102,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
+              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
               numericInput(session$ns('num_median_bootstrap'),"Number Bootstrap Runs",value=1000)
             )
           )
@@ -112,6 +114,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
+              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
               numericInput(session$ns('tau_prior_scale'),"Tau Prior Median (Default: mad(x))",value=default_tps),
               numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median (Default: median(u))',value=default_sps)
             )
@@ -124,6 +127,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
+              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
               numericInput(session$ns('tau_prior_scale'),"Tau Prior Median",value=default_tps),
               numericInput(session$ns('nu_prior_scale'),"Nu Prior Median",value=1),
               numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median',value=default_sps)
@@ -141,7 +145,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         # mu, mu_upper, mu_lower
         # tau, se (of the mean)
         
-        jags_params = list(n_iter = 100000,burn_in = 20000, thin=10)
+        set.seed(abs(round(input$random_seed)))
+        
+        jags_params = list(n_iter = 150000,burn_in = 50000, thin=5)
         
         the_proc = selected_procedure()
         res = list()
@@ -429,7 +435,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             # if lab was included in MCMC, use MCMC samples 
             if(vars_in$which_to_compute[jj]) {
               
-              # lab random effect - KC
+              # lab random effect - KCRV
               distances[,jj] = p_samples$lambda[,counter] - p_samples$mu
               counter = counter + 1
             
@@ -444,7 +450,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             
           }
           
-          DoE.x = apply(distances,2,mean)
+          DoE.x = data$Result - res()$mu #apply(distances,2,mean)
           DoE.U = apply(distances,2,sd)
           
           quants_lwr = rep(0,ncol(distances))
