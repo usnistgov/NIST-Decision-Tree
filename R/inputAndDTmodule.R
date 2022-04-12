@@ -153,7 +153,7 @@ input_server <- function(id) {
         the_data = hot_to_r(input$hot)
         colnames(the_data) = c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
         
-        which_to_compute = the_data$Include
+        which_to_compute = as.logical(the_data$Include)
         measured_vals = as.numeric(the_data$Result)[which_to_compute]
         standard_unc = as.numeric(the_data$Uncertainty)[which_to_compute]
         dof = as.numeric(the_data$DegreesOfFreedom)[which_to_compute]

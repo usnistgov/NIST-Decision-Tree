@@ -360,7 +360,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
               tagList(
                 br(),
                 h3(paste("Results:",res$method)),
-                h5(paste("Consensus estiamte"),round(res$mu,3)),
+                h5(paste("Consensus estimate"),round(res$mu,3)),
                 h5(paste("Standard uncertainty:", round(res$se,3))),
                 h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep=''))
               )
