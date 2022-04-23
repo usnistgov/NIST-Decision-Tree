@@ -94,6 +94,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           return(
             tagList(
               numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                           value=4,
+                           min=1,
+                           step=1),
               numericInput(session$ns('num_DL_DOE_bootstrap'),"Number Bootstrap for DOE",value=1000)
             )
           )
@@ -103,6 +107,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           return(
             tagList(
               numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                           value=4,
+                           min=1,
+                           step=1),
               numericInput(session$ns('num_median_bootstrap'),"Number Bootstrap Runs",value=1000)
             )
           )
@@ -115,6 +123,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           return(
             tagList(
               numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                           value=4,
+                           min=1,
+                           step=1),
               numericInput(session$ns('tau_prior_scale'),"Tau Prior Median (Default: mad(x))",value=default_tps),
               numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median (Default: median(u))',value=default_sps)
             )
@@ -128,6 +140,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           return(
             tagList(
               numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                           value=4,
+                           min=1,
+                           step=1),
               numericInput(session$ns('tau_prior_scale'),"Tau Prior Median",value=default_tps),
               numericInput(session$ns('nu_prior_scale'),"Nu Prior Median",value=1),
               numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median',value=default_sps)
@@ -144,6 +160,14 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         # res expects the following scalar values:
         # mu, mu_upper, mu_lower
         # tau, se (of the mean)
+        
+        
+        validate(
+          need(is.numeric(input$random_seed),
+               'Random Seed must be a positive integer.'),
+          need(input$nsd %in% 2:10,
+               "Number of significant digits must be between 2 and 10.")
+        )
         
         set.seed(abs(round(input$random_seed)))
         
@@ -337,6 +361,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             return(NULL)
           }
           
+          nsd = input$nsd
+          
           the_proc = isolate(selected_procedure())
           
           res = res()
@@ -346,10 +372,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             return(
               tagList(
                 h3(paste("Results:",res$method)),
-                h5(paste("Consensus estimate:",round(res$mu,3))),
-                h5(paste("Standard uncertainty:", round(res$se,3))),
-                h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-                h5(paste("Dark uncertainty (tau): ",round(res$tau,3) ))
+                h5(paste("Consensus estimate:",signif(res$mu,nsd))),
+                h5(paste("Standard uncertainty:", signif(res$se,nsd))),
+                h5(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",sep='')),
+                h5(paste("Dark uncertainty (tau): ",signif(res$tau,nsd) ))
                 
               )
             )
@@ -360,9 +386,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
               tagList(
                 br(),
                 h3(paste("Results:",res$method)),
-                h5(paste("Consensus estimate"),round(res$mu,3)),
-                h5(paste("Standard uncertainty:", round(res$se,3))),
-                h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep=''))
+                h5(paste("Consensus estimate"),signif(res$mu,nsd)),
+                h5(paste("Standard uncertainty:", signif(res$se,nsd))),
+                h5(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",sep=''))
               )
             )
             
@@ -372,11 +398,11 @@ resultsServer <- function(id,vars_in,selected_procedure) {
               tagList(
                 br(),
                 h3(paste("Results:",res$method)),
-                h5(paste("Consensus estimate:",round(res$mu,3))),
-                h5(paste("Standard uncertainty:", round(res$se,3))),
-                h5(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",sep='')),
-                h5(paste("Dark uncertainty (tau) : ",round(res$tau,3) )),
-                h5(paste("Tau posterior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,3),',',signif(res$tau_upper,3),')',sep=''))
+                h5(paste("Consensus estimate:",signif(res$mu,nsd))),
+                h5(paste("Standard uncertainty:", signif(res$se,nsd))),
+                h5(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",sep='')),
+                h5(paste("Dark uncertainty (tau) : ",signif(res$tau,nsd) )),
+                h5(paste("Tau posterior 0.025 and 0.975 quantiles: ",'(',signif(res$tau_lower,nsd),',',signif(res$tau_upper,nsd),')',sep=''))
               )
             )
           }
@@ -436,13 +462,15 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             if(vars_in$which_to_compute[jj]) {
               
               # lab random effect - KCRV
-              distances[,jj] = p_samples$lambda[,counter] - p_samples$mu
+              sd_vec = sqrt(p_samples$tau^2 + p_samples$sigma[,counter]^2)
+              
+              distances[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec)
               counter = counter + 1
             
             # if lab not included in model simulate from input data  
             } else {
             
-              sd_vec = sqrt(data$Uncertainty[jj]^2)
+              sd_vec = sqrt(p_samples$tau^2 + data$Uncertainty[jj]^2)
               distances[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec)
             
             }
@@ -450,7 +478,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             
           }
           
-          DoE.x = data$Result - res()$mu #apply(distances,2,mean)
+          DoE.x = data$Result - res()$mu 
           DoE.U = apply(distances,2,sd)
           
           quants_lwr = rep(0,ncol(distances))
@@ -464,15 +492,13 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           outdf = data.frame(Lab=data$Laboratory,
                              DoE.x=DoE.x, 
-                             DoE.U95=DoE.U,
+                             DoE.U95=DoE.U*2,
                              DoE.Lwr=quants_lwr, 
                              DoE.Upr=quants_upr)
           
           return(list(DoE=outdf))
           
         } else if(grepl('median',the_proc,TRUE)) {
-          
-          #browser()
           
           res = res()
           data = vars_in()$the_data
@@ -503,7 +529,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           outdf = data.frame(Lab=data$Laboratory,
                              DoE.x=DoE.x, 
-                             DoE.U95=DoE.U,
+                             DoE.U95=DoE.U*2,
                              DoE.Lwr=quants_lwr, 
                              DoE.Upr=quants_upr)
           
@@ -556,7 +582,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           data = doe_res()$DoE
           
-          data[,2:5] = signif(data[,2:5])
+          data[,2:5] = signif(data[,2:5],input$nsd)
           
           return(data)
           
@@ -604,7 +630,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res = res()
           vars_in = vars_in()
           the_proc = isolate(selected_procedure())
-          
+          nsd = input$nsd
           doe_res = doe_res()
           
           if(grepl('recommend',the_proc,ignore.case = T)) {
@@ -616,7 +642,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                               params = list(res = res,
                                             vars_in = vars_in,
                                             the_proc = the_proc,
-                                            doe_res = doe_res))
+                                            doe_res = doe_res,
+                                            nsd = nsd))
           })
           
           file.copy('./R/ResultsDownload.pdf',file)

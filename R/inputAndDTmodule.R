@@ -136,7 +136,7 @@ input_server <- function(id) {
         
         data$upper = data$Result + data$Uncertainty
         data$lower = data$Result - data$Uncertainty
-        data$Include = as.character(data$Include)
+        data$Include = as.character(as.logical(data$Include))
         
         p = ggplot(data,aes(x=Laboratory,y=Result,color=Include)) + 
           geom_point() +

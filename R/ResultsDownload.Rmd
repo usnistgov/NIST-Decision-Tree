@@ -6,6 +6,7 @@ params:
   vars_in: NA
   the_proc: NA
   doe_res: NA
+  nsd: NA
 
 ---
 
@@ -31,27 +32,27 @@ cat(paste('Selected Procedure:', the_proc,'  \n'))
   # DSL
 if(grepl('average',the_proc,TRUE)) {
   
-  cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
-  cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
-  cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
-  cat(paste("Dark uncertainty (tau): ",round(res$tau,3),'  \n' ))
+  cat(paste("Consensus estimate:",signif(res$mu,nsd),'  \n'))
+  cat(paste("Standard uncertainty:", signif(res$se,nsd),'  \n'))
+  cat(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",'  \n',sep=''))
+  cat(paste("Dark uncertainty (tau): ",signif(res$tau,nsd),'  \n' ))
   
 # weighted median
 } else if(grepl('median',the_proc,TRUE)) {
 
-  cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
-  cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
-  cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
+  cat(paste("Consensus estimate:",signif(res$mu,nsd),'  \n'))
+  cat(paste("Standard uncertainty:", signif(res$se,nsd),'  \n'))
+  cat(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",'  \n',sep=''))
   
 # bayes
 } else {
 
-  cat(paste("Consensus estimate:",round(res$mu,3),'  \n'))
-  cat(paste("Standard uncertainty:", round(res$se,3),'  \n'))
-  cat(paste("95% coverage interval: (",round(res$mu_lower,3),", ",round(res$mu_upper,3),")",'  \n',sep=''))
-  cat(paste("Dark uncertainty (tau): ",round(res$tau,3),'  \n' ))
+  cat(paste("Consensus estimate:",signif(res$mu,nsd),'  \n'))
+  cat(paste("Standard uncertainty:", signif(res$se,nsd),'  \n'))
+  cat(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",'  \n',sep=''))
+  cat(paste("Dark uncertainty (tau): ",signif(res$tau,nsd),'  \n' ))
   cat(paste("Tau posterior 0.025 and 0.975 quantiles: ",'(',
-            signif(res$tau_lower,3),',',signif(res$tau_upper,3),')','  \n',sep=''))
+            signif(res$tau_lower,nsd),',',signif(res$tau_upper,nsd),')','  \n',sep=''))
 }
 
 
@@ -95,12 +96,12 @@ cat(paste("p-value: ",pval,'  \n',
 
 Shapiro-Wilk test for Normality:
 ```{r results='asis'}
-cat(paste("p =", signif(sw_res$p.value,3), '  \n'))
+cat(paste("p =", signif(sw_res$p.value,nsd), '  \n'))
 ```
 
 Miao-Gel-Gastwirth test of Symmetry:
 ```{r results='asis'}
-cat(paste("p =", signif(sym_res$p.value,3)))
+cat(paste("p =", signif(sym_res$p.value,nsd)))
 ```
 
 ## Plots
