@@ -121,10 +121,13 @@ KCplot(val=vars_in$measured_vals,
 
 ```{r, fig.height=5, fig.width=7 }
 
+doe_table = doe_res$DoE
+doe_table[,2:5] = signif(doe_table[,2:5],nsd)
+
 DoEplot(doe_res$DoE,'Unilateral Degrees of Equivalence')
 
 knitr::kable(
-  doe_res()$DoE
+  doe_table
 )
 ```
 
