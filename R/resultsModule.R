@@ -431,7 +431,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           doe_res = DoEUnilateralDL(data$Result,
                                     data$Uncertainty,
                                     data$DegreesOfFreedom,
-                                    data$Laboratory,
+                                    as.character(data$Laboratory),
                                     isolate(input$num_DL_DOE_bootstrap), # number bootstrap
                                     FALSE, # LOO
                                     .95, # coverage prob
