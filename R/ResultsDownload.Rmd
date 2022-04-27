@@ -17,14 +17,14 @@ knitr::opts_chunk$set(echo = FALSE)
 ## Summary
 ```{r results='asis'}
 
-knitr::kable(
-  vars_in()$the_data
-)
-
 res = params$res
 vars_in = params$vars_in
 the_proc = params$the_proc
 doe_res = params$doe_res
+
+knitr::kable(
+  vars_in$the_data
+)
 
 cat(paste('Date:', Sys.Date(),'  \n'))
 cat(paste('Selected Procedure:', the_proc,'  \n'))
@@ -107,16 +107,16 @@ cat(paste("p =", signif(sym_res$p.value,nsd)))
 ## Plots
 ```{r, fig.height=5, fig.width=7 }
 
-KCplot(val=vars_in$measured_vals, 
-                 unc=vars_in$standard_unc, 
+KCplot(val=vars_in$the_data$Result, 
+                 unc=vars_in$the_data$Uncertainty, 
                  tau=res$tau,
                  kcrv=res$mu, 
                  kcrv.unc=res$se,
-                 lab=vars_in$the_data$Laboratory[vars_in$which_to_compute], 
+                 lab=vars_in$the_data$Laboratory, 
                  title=paste("KCRV Estimation:",the_proc), 
-                 title.placement="left",
+                 title.position="left",
                  ylab=NULL, 
-                 exclude=NULL)
+                 exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
 ```
 
 ```{r, fig.height=5, fig.width=7 }
@@ -124,7 +124,9 @@ KCplot(val=vars_in$measured_vals,
 doe_table = doe_res$DoE
 doe_table[,2:5] = signif(doe_table[,2:5],nsd)
 
-DoEplot(doe_res$DoE,'Unilateral Degrees of Equivalence')
+DoEplot(doe_table,
+        'Unilateral Degrees of Equivalence',
+        exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
 
 knitr::kable(
   doe_table

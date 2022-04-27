@@ -261,9 +261,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         model_inits = function() {
           list(mu = mean(x),
-               tau = sqrt(var(x)),
+               tau = mad(x),
                lambda = x,
-               sigma=u)
+               sigma = u)
         }
         
         model_data = list(N=n, 
@@ -327,9 +327,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           value=.5,
           message="Running MCMC...")
 
-          
           p_samples = jags_out$BUGSoutput$sims.list
-          
           
           res$mu = mean(p_samples$mu)
           hw = symmetricalBootstrapCI(p_samples$mu,res$mu,.95)
