@@ -23,7 +23,7 @@ inputUI <- function(id) {
     fluidRow(column(1,actionButton(ns('validate'),"Validate Data"))),
     fluidRow(column(4,uiOutput(ns('validate_msg')))),
     br(),
-    fluidRow(column(6,br(),br(),br(),br(),rHandsontableOutput(ns("hot")),offset=1),
+    fluidRow(column(7,br(),br(),br(),br(),rHandsontableOutput(ns("hot")),offset=.5),
              column(5,plotOutput(ns('raw_data_plot')))),
     br(),
     hr(),
@@ -60,12 +60,19 @@ input_server <- function(id) {
         validate(
           need(colnames(the_data) == c('Laboratory','MeasuredValues','StdUnc','DegreesOfFreedom'),
                paste('Column names of the .csv file do not match the expected column names.',
-                     'Columns headings should read "Laboratory","MeasuredValues","StdUnc","DegreesOfFreedom".'))
+                     'Columns headings should read "Laboratory","MeasuredValues","StdUnc","DegreesOfFreedom".')),
+          need(all(is.numeric(the_data$MeasuredValues)),
+               "All MeasuredValues must be numeric."),
+          need(all(is.numeric(the_data$StdUnc)),
+               "All StdUnc must be numeric."),
+          need(all(the_data$StdUnc > 0),
+               "All StdUnc must be positive.")
         )
         
         return(the_data)
         
       },ignoreNULL = FALSE)
+      
       
       output$hot <- renderRHandsontable({
         
@@ -95,19 +102,33 @@ input_server <- function(id) {
                                uncertainty=the_data$StdUnc,
                                dof=the_data$DegreesOfFreedom)
           
+          
+          
         }
+        
+        min_val = min(abs(init.df[,3:4]))
+        decs = min_val - round(min_val,0)
+        decs = format(decs,scientific = FALSE)
+        # get number of decimal places; need to subtract 2 from the length for "0."
+        num_dec = length(strsplit(decs,'')[[1]]) - 2
+        
+        if(num_dec < 1) {
+          num_dec = 1
+        }
+        
+        digits_pattern = paste0("0.",paste0(rep('0',num_dec),collapse=''))
           
         DF = init.df 
         names(DF) <- c('Include','Laboratory','MeasuredValues','StdUnc','DegreesOfFreedom')
         
         myindex = which(DF[,1]==F)-1
         
-        rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE, myindex = myindex) %>%
+        rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE,digits=num_dec) %>%
           hot_context_menu(allowColEdit = FALSE) %>%
-          hot_validate_numeric(cols=3:4) %>%
+          #hot_validate_numeric(cols=3:4) %>%
           hot_col(2, format = '', halign = 'htCenter', valign = 'htTop') %>%
           hot_col(1, halign = 'htCenter') %>%
-          hot_col(c(3,4), format='0.0000',halign = 'htCenter') %>%
+          hot_col(c(3,4), format=digits_pattern,halign = 'htCenter') %>%
           hot_col(5, type = 'numeric', format = '0',halign = 'htCenter') %>%
           #hot_col(c(3,4), format = paste0("0.", paste0(rep(0, 5), collapse='')), halign = 'htCenter') %>%
         #   hot_col(c(2,3,4,5), renderer = "function(instance, td, row, col, prop, value, cellProperties) {
@@ -120,7 +141,9 @@ input_server <- function(id) {
         #   else {td.style.background = 'darkseagreen';  }
         # }
         # ") %>%
-          hot_col(1, type = 'checkbox')
+          hot_col(1, type = 'checkbox') %>% 
+          hot_cols(manualColumnResize = TRUE,
+                   colWidths = c(75,100,150,150,100))
         
       })
       
