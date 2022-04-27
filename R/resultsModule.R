@@ -556,16 +556,17 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             the_proc = strsplit(the_proc,'\\(')[[1]][1]
           }
           
-          KCplot(val=vars_in$measured_vals, 
-                 unc=vars_in$standard_unc, 
+          
+          KCplot(val=vars_in$the_data$Result, 
+                 unc=vars_in$the_data$Uncertainty, 
                  tau=res$tau,
                  kcrv=res$mu, 
                  kcrv.unc=res$se,
-                 lab=vars_in$the_data$Laboratory[vars_in$which_to_compute], 
+                 lab=vars_in$the_data$Laboratory, 
                  title=paste("KCRV Estimation:",the_proc), 
-                 title.placement="left",
+                 title.position="left",
                  ylab=NULL, 
-                 exclude=NULL)
+                 exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
           
         })
 
@@ -602,8 +603,11 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           }
           
           data = doe_res()$DoE
+          vars_in = vars_in()
           
-          return(DoEplot(data,'Unilateral Degrees of Equivalence'))
+          return(DoEplot(data,
+                         'Unilateral Degrees of Equivalence',
+                         exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute]))
           
         
         })

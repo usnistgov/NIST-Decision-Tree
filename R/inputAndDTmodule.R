@@ -143,7 +143,7 @@ input_server <- function(id) {
         # ") %>%
           hot_col(1, type = 'checkbox') %>% 
           hot_cols(manualColumnResize = TRUE,
-                   colWidths = c(75,100,150,150,100))
+                   colWidths = c(75,100,130,130,150))
         
       })
       
