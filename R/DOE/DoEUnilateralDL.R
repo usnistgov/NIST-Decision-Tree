@@ -32,7 +32,7 @@
 
 ######################################################################
 
-DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, DLRes)
+DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, DLRes, exclude)
 {
   require(metafor)
   testWarn = ""
@@ -42,7 +42,8 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
   if (is.null(lab.All)) {lab.All=paste("L", 1:n.All, sep="")}
   
   # Check if any lab was exempt from prior computation
-  sanitize = !startsWith( lab.All,"-")
+  #sanitize = !startsWith( lab.All,"-")
+  sanitize = !exclude
   
   ## Analysis for included labs 
   x=x.All[sanitize]

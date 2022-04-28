@@ -419,8 +419,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           data = vars_in()$the_data
           
-          DLres = metafor::rma(yi=data$Result, 
-                               sei=data$Uncertainty,
+          DLres = metafor::rma(yi=data$Result[data$Include], 
+                               sei=data$Uncertainty[data$Include],
                                level=95,
                                method="DL")
           
@@ -433,7 +433,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                     isolate(input$num_DL_DOE_bootstrap), # number bootstrap
                                     FALSE, # LOO
                                     .95, # coverage prob
-                                    DLres) # dl res
+                                    DLres,
+                                    exclude = !data$Include) # dl res
           
           },
           value=.5,
