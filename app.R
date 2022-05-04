@@ -29,6 +29,17 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
 
     tags$head(tags$link(rel="shortcut icon", href="./favicon.ico")),
     tags$head(HTML("<title>NIST Decision Tree</title>")),
+    tags$head(HTML(
+      '<!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-4XRM4LDBLT"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag("js", new Date());
+        
+          gtag("config", "G-4XRM4LDBLT");
+        </script>'
+    )),
 
     tags$div(HTML('<class="nist-header">')),
 
@@ -43,7 +54,7 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
                   </div>")),
 
     ### end styling
-    
+  
     column(width=11,
     
     titlePanel("NIST Decision Tree for Key Comparisons"),
