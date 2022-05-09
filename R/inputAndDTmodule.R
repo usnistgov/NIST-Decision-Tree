@@ -123,6 +123,7 @@ input_server <- function(id) {
         
         myindex = which(DF[,1]==F)-1
         
+        
         rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE,digits=num_dec) %>%
           hot_context_menu(allowColEdit = FALSE) %>%
           #hot_validate_numeric(cols=3:4) %>%
@@ -151,6 +152,8 @@ input_server <- function(id) {
         
         data = hot_to_r(input$hot)
         
+        validated(0)
+        
         if(is.null(data)) {
           return(NULL)
         }
@@ -160,11 +163,13 @@ input_server <- function(id) {
         data$upper = data$Result + data$Uncertainty
         data$lower = data$Result - data$Uncertainty
         data$Include = as.character(as.logical(data$Include))
+        lvls = data$Laboratory
         
-        p = ggplot(data,aes(x=Laboratory,y=Result,color=Include)) + 
+        p = ggplot(data,aes(x=factor(Laboratory,levels=lvls),y=Result,color=Include)) + 
           geom_point() +
           geom_errorbar(aes(ymin=lower,ymax=upper),width=.2) +
           ylab("Measured Value +/- Std. Uncertainty") + 
+          xlab("Lab") +
           scale_color_manual(values=c("TRUE"="black","FALSE"="grey50"))
         
         p
@@ -186,10 +191,12 @@ input_server <- function(id) {
         
         
         if(any(dof < 1)) {
+          validated(-1)
           return("Degrees of freedom cannot be less than 1.")
         }
         
         if(any(standard_unc <= 0)) {
+          validated(-1)
           return("Standard uncertainties must be positive.")
         }
         
@@ -198,12 +205,16 @@ input_server <- function(id) {
         n3 = length(dof)
         
         if(any(n1!=n2,n1!=n3,n2!=n3)){
+          validated(-1)
           return("Unequal number of entries. Each field should have the same number of input quantities.")
         }
         
         if(sum(which_to_compute) < 3) {
+          validated(-1)
           return("Need at least 3 observations to use the decision tree.")
         }
+        
+        validated(1)
         
         return(list(measured_vals=measured_vals,
                     standard_unc=standard_unc,
@@ -222,24 +233,31 @@ input_server <- function(id) {
         
       })
       
-      observeEvent(init, {
+      validated = reactiveVal(value=0)
+  
+      output$validate_msg = renderUI({
         
-        output$validate_msg = renderUI({
+        data = input$hot
+        
+        if(validated()==1) {
+          return(
+            h5("Valid inputs. Proceed to the next tab (Decision Tree).",style='color:#009900')
+            )
           
-          
-          if(is.list(init())) {
-            return(
-              h5("Valid inputs. Proceed to the next tab (Decision Tree).",style='color:#009900')
-              )
-            
-          } else{
-            return(
+        } else if(validated() == -1){
+          return(
+            tagList(
               h5(init(),style="color:#cc0000")
             )
-          }
-        })
+            
+          )
+        } else if(validated() == 0) {
+          return(h5("Inputs not yet validated. Please validate inputs before running model.",
+                    style="color:#DAA520"))
+        }
         
       })
+      
 
       return(vars_in)
     }

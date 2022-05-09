@@ -34,7 +34,11 @@ if(grepl('average',the_proc,TRUE)) {
   
   cat(paste("Consensus estimate:",signif(res$mu,nsd),'  \n'))
   cat(paste("Standard uncertainty:", signif(res$se,nsd),'  \n'))
+  cat(paste("Standard uncertainty (using parametric bootstrap):", signif(res$se_dslbs,nsd),'  \n'))
   cat(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",'  \n',sep=''))
+  cat(paste("95% coverage interval (using parametric bootstrap): (",
+            signif(res$mu_lower_dslbs,nsd),", ",
+            signif(res$mu_upper_dslbs,nsd),")",'  \n',sep=''))
   cat(paste("Dark uncertainty (tau): ",signif(res$tau,nsd),'  \n' ))
   
 # weighted median
@@ -107,11 +111,17 @@ cat(paste("p =", signif(sym_res$p.value,nsd)))
 ## Plots
 ```{r, fig.height=5, fig.width=7 }
 
+if(grepl('average',the_proc,TRUE)) {
+  kcrv.unc = max(res$se,res$se_dslbs)
+} else {
+  kcrv.unc = res$se
+}
+
 KCplot(val=vars_in$the_data$Result, 
                  unc=vars_in$the_data$Uncertainty, 
                  tau=res$tau,
                  kcrv=res$mu, 
-                 kcrv.unc=res$se,
+                 kcrv.unc=kcrv.unc,
                  lab=vars_in$the_data$Laboratory, 
                  title=paste("KCRV Estimation:",the_proc), 
                  title.position="left",

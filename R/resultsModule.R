@@ -42,6 +42,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           return(NULL)
         } 
         tagList(
+          hr(),
           actionButton(session$ns('run_method'),"Run Method"),
           helpText("Click the button above to run the selected method. The results will be displayed below."),
         )
@@ -59,7 +60,10 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              h3(the_proc)
+              h3(paste0("Selected Procedure: ",the_proc)),
+              p(paste0("After you have confirmed your selections for the parameters below, ",
+                       "click the 'Run Method' button to run the analysis. ",
+                       "Once finished, you may download a .pdf report with the results of the analysis."))
             )
           )
           
@@ -93,12 +97,28 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
-              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
-                           value=4,
-                           min=1,
-                           step=1),
-              numericInput(session$ns('num_DL_DOE_bootstrap'),"Number Bootstrap for DOE",value=1000)
+              hr(),
+              br(),
+              h3("General Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(3,
+                  numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+                ),
+                column(3,
+                  numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                               value=4,
+                               min=1,
+                               step=1)
+                )
+                  
+              ),
+              br(),
+              hr(),
+              br(),
+              h3("Model Estimation Parameters",style='text-align:center'),
+              br(),
+              numericInput(session$ns('num_DL_DOE_bootstrap'),"Number of Boostrap Replicates for Uncertainty Evaluations",value=5000)
             )
           )
           
@@ -106,12 +126,28 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
-              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
-                           value=4,
-                           min=1,
-                           step=1),
-              numericInput(session$ns('num_median_bootstrap'),"Number Bootstrap Runs",value=1000)
+              hr(),
+              br(),
+              h3("General Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(3,
+                       numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+                ),
+                column(3,
+                       numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                                    value=4,
+                                    min=1,
+                                    step=1)
+                )
+                
+              ),
+              br(),
+              hr(),
+              br(),
+              h3("Model Estimation Parameters",style='text-align:center'),
+              br(),
+              numericInput(session$ns('num_median_bootstrap'),"Number Bootstrap Runs",value=5000)
             )
           )
           
@@ -122,13 +158,38 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
-              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
-                           value=4,
-                           min=1,
-                           step=1),
-              numericInput(session$ns('tau_prior_scale'),"Tau Prior Median (Default: mad(x))",value=default_tps),
-              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median (Default: median(u))',value=default_sps)
+              h3("General Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(3,
+                       numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+                ),
+                column(3,
+                       numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                                    value=4,
+                                    min=1,
+                                    step=1)
+                )
+                
+              ),
+              hr(),
+              h3("MCMC Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(3,numericInput(session$ns('total_mcmc'),"Total Number of MCMC Steps",value=250000)),
+                column(3,numericInput(session$ns('burnin_mcmc'),"Number of MCMC Warm-Up Steps",value=125000)),
+                column(3,numericInput(session$ns('thin_mcmc'),"Keep an MCMC Draw Every ____ Steps",value=10)),
+              ),
+              hr(),
+              br(),
+              h3("Prior Distribution Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(3,numericInput(session$ns('tau_prior_scale'),"Tau Prior Median (Default: mad(x))",value=default_tps)),
+                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median (Default: med(u))',value=default_sps))
+              ),
+              br()
+              
             )
           )
           
@@ -139,14 +200,44 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           return(
             tagList(
-              numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
-              numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
-                           value=4,
-                           min=1,
-                           step=1),
-              numericInput(session$ns('tau_prior_scale'),"Tau Prior Median",value=default_tps),
-              numericInput(session$ns('nu_prior_scale'),"Nu Prior Median",value=1),
-              numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median',value=default_sps)
+              
+              h3("General Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(4,
+                       numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
+                ),
+                column(4,
+                       numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
+                                    value=4,
+                                    min=1,
+                                    step=1)
+                )
+                
+              ),
+              hr(),
+              br(),
+              h3("MCMC Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(3,numericInput(session$ns('total_mcmc'),"Total Number of MCMC Steps",value=250000)),
+                column(3,numericInput(session$ns('burnin_mcmc'),"Number of MCMC Warm-Up Steps",value=125000)),
+                column(3,numericInput(session$ns('thin_mcmc'),"Keep an MCMC Draw Every ____ Steps",value=10))
+              ),
+              br(),
+              hr(),
+              br(),
+              h3("Prior Distribution Parameters",style='text-align:center'),
+              br(),
+              fluidRow(
+                column(3,numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale (Default: mad(x))",value=default_tps)),
+                column(3,numericInput(session$ns('nu_prior_shape'),"Gamma Shape for Nu Prior Scale",value=3)),
+                column(3,numericInput(session$ns('nu_prior_scale'),"Gamma Scale for Nu Prior Scale",value=0.25))
+              ),
+              fluidRow(
+                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale (Default: med(x))',value=default_sps)),
+                column(3,numericInput(session$ns('alpha_prior_scale'),'Alpha (Skewness) Prior Scale',value=4))
+              )
             )
           )
         }
@@ -162,6 +253,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         # tau, se (of the mean)
         
         
+        
         validate(
           need(is.numeric(input$random_seed),
                'Random Seed must be a positive integer.'),
@@ -169,9 +261,27 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                "Number of significant digits must be between 2 and 10.")
         )
         
-        set.seed(abs(round(input$random_seed)))
+        if(grepl('(gauss)|(laplace)|(skew)',selected_procedure(),TRUE)) {
+          
+          jags_params = list(n_iter = round(input$total_mcmc),
+                             burn_in = round(input$burnin_mcmc), 
+                             thin = round(input$thin_mcmc))
+          
+          validate(
+            need( (jags_params$n_iter > 0) && (jags_params$burn_in > 0) && (jags_params$thin > 0),
+                  "MCMC parameters must all be positive."),
+            need( jags_params$burn_in < jags_params$n_iter,
+                  "Number of warm up MCMC draws must be less than the total number of MCMC draws."),
+            need(jags_params$n_iter <= 500000,
+                 "Total MCMC draws must be less than or equal to 500000."),
+            need(jags_params$thin <= 50,
+                 "Thinning rate for MCMC draws must be less than or equal to 50.")
+          )
+          
+        }
         
-        jags_params = list(n_iter = 150000,burn_in = 50000, thin=5)
+
+        set.seed(abs(round(input$random_seed)))
         
         the_proc = selected_procedure()
         res = list()
@@ -192,6 +302,22 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                method="DL")
           
           res$method = "Adaptive Weighted Average"
+          
+          withProgress({
+            
+            bootDL_res = bootDL(input$num_DL_DOE_bootstrap,
+                                thedat=data.frame(x=x,u=u,dof=dof),
+                                themle=list(mu=DLres$beta))
+            
+          },value=.33,
+          message = "Running Bootstrap for KCRV 1/2")
+        
+          
+          
+          res$se_dslbs = sd(bootDL_res)
+          hw_dslbs = symmetricalBootstrapCI(bootDL_res,as.numeric(DLres$beta),.95)
+          res$mu_upper_dslbs = DLres$beta + hw_dslbs
+          res$mu_lower_dslbs = DLres$beta - hw_dslbs
           
           res$mu = DLres$beta
           res$mu_upper = DLres$ci.ub
@@ -215,8 +341,12 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           } 
           
-          bt_res = DTweightedMedian(x=x, ux=u, nux=dof, K=5000, conf.level=0.95,
-                                    bootstrap=NULL, print=FALSE)
+          withProgress({
+            bt_res = DTweightedMedian(x=x, ux=u, nux=dof, K=5000, conf.level=0.95,
+                                      bootstrap=NULL, print=FALSE)
+          },
+          value=.33,
+          message="Running Bootstrap for KCRV")
           
           res$mu = bt_res$m
           res$se = bt_res$um
@@ -270,7 +400,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                           x=x, 
                           u2=u^2, 
                           dof=dof, 
-                          med_abs_dif=isolate(input$tau_prior_scale),
+                          tau_prior_scale=isolate(input$tau_prior_scale),
                           sigma_prior_scale = isolate(input$sigma_prior_scale))
         
         parameters_to_save = c('mu','tau','lambda','sigma')
@@ -283,7 +413,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                  sigma=u)
           }
           
+          model_data$nu_prior_shape = isolate(input$nu_prior_shape)
           model_data$nu_prior_scale = isolate(input$nu_prior_scale)
+          model_data$alpha_prior_scale = isolate(input$alpha_prior_scale)
           
           parameters_to_save = c(parameters_to_save,'delta','nu')
           
@@ -372,7 +504,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 h3(paste("Results:",res$method)),
                 h5(paste("Consensus estimate:",signif(res$mu,nsd))),
                 h5(paste("Standard uncertainty:", signif(res$se,nsd))),
+                h5(paste("Standard uncertainty (using parametric bootstrap):", signif(res$se_dslbs,nsd))),
                 h5(paste("95% coverage interval: (",signif(res$mu_lower,nsd),", ",signif(res$mu_upper,nsd),")",sep='')),
+                h5(paste("95% coverage interval (using parametric bootstrap): (",signif(res$mu_lower_dslbs,nsd),", ",signif(res$mu_upper_dslbs,nsd),")",sep='')),
                 h5(paste("Dark uncertainty (tau): ",signif(res$tau,nsd) ))
                 
               )
@@ -419,12 +553,14 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           data = vars_in()$the_data
           
+          withProgress({
+          
           DLres = metafor::rma(yi=data$Result[data$Include], 
                                sei=data$Uncertainty[data$Include],
                                level=95,
                                method="DL")
           
-          withProgress({
+
           
           doe_res = DoEUnilateralDL(data$Result,
                                     data$Uncertainty,
@@ -437,8 +573,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                     exclude = !data$Include) # dl res
           
           },
-          value=.5,
-          message='Computing DoE...')
+          value=.66,
+          message='Running Bootstrap for DoE 2/2')
           
           return(doe_res)
           
@@ -505,13 +641,21 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           distances = matrix(0,nrow=length(res$boot_samples),ncol=nrow(data))
           colnames(distances) = data$Laboratory
           
-          for(jj in 1:ncol(distances)) {
+          withProgress({
             
-            sd_vec = data$Uncertainty
+            for(jj in 1:ncol(distances)) {
+              
+              sd_vec = data$Uncertainty
+              
+              distances[,jj] = data$Result[jj] - res$boot_samples + rnorm(length(res$boot_samples),mean=0,sd=sd_vec[jj])
+              
+            }
             
-            distances[,jj] = data$Result[jj] - res$boot_samples + rnorm(length(res$boot_samples),mean=0,sd=sd_vec[jj])
-            
-          }
+          },
+          message='Computing DoE',
+          value = .66)
+          
+          
           
           DoE.x = apply(distances,2,mean)
           DoE.U = apply(distances,2,sd)
@@ -555,12 +699,17 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             the_proc = strsplit(the_proc,'\\(')[[1]][1]
           }
           
+          if(grepl('average',the_proc,TRUE)) {
+            kcrv.unc = max(res$se,res$se_dslbs)
+          } else {
+            kcrv.unc = res$se
+          }
           
           KCplot(val=vars_in$the_data$Result, 
                  unc=vars_in$the_data$Uncertainty, 
                  tau=res$tau,
                  kcrv=res$mu, 
-                 kcrv.unc=res$se,
+                 kcrv.unc=kcrv.unc,
                  lab=vars_in$the_data$Laboratory, 
                  title=paste("KCRV Estimation:",the_proc), 
                  title.position="left",

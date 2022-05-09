@@ -2,7 +2,7 @@ model {
 
   # priors 
   mu ~ dnorm(0.0, 1.0E-10)
-  tau ~ dt(0, 1/med_abs_dif^2, 1)T(0,)
+  tau ~ dt(0, 1/tau_prior_scale^2, 1)T(0,)
 
         
   for(j in 1:N) {
