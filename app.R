@@ -7,6 +7,7 @@ library(ggplot2)
 library(R2jags)
 library(rhandsontable)
 library(tinytex)
+library(metafor)
 # also need boot, extraDistr, rmarkdown, knitr
 
 
@@ -36,7 +37,7 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag("js", new Date());
-        
+
           gtag("config", "G-4XRM4LDBLT");
         </script>'
     )),
