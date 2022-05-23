@@ -330,7 +330,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
 
         } else if(grepl('median',the_proc,TRUE)) {
           
-          if(length(x) >= 12) {
+          if(length(x) >= 15) {
             
             res$method = "Weighted Median with Nonparametric Bootstrap"
   
@@ -342,7 +342,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           } 
           
           withProgress({
-            bt_res = DTweightedMedian(x=x, ux=u, nux=dof, K=5000, conf.level=0.95,
+            bt_res = weightedMedian(x=x, ux=u, nux=dof, K=5000, conf.level=0.95,
                                       bootstrap=NULL, print=FALSE)
           },
           value=.33,
@@ -641,6 +641,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           distances = matrix(0,nrow=length(res$boot_samples),ncol=nrow(data))
           colnames(distances) = data$Laboratory
           
+          
           withProgress({
             
             for(jj in 1:ncol(distances)) {
@@ -657,7 +658,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           
           
-          DoE.x = apply(distances,2,mean)
+          DoE.x = data$Result - res$mu
           DoE.U = apply(distances,2,sd)
           
           quants_lwr = rep(0,ncol(distances))

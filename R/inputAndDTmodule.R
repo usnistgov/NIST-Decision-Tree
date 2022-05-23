@@ -31,9 +31,8 @@ inputUI <- function(id) {
     p("Alternatively, you may upload a .csv file following the same format as the above table.",
       '(Column names should read "Laboratory","MeasuredValues","StdUnc","DegreesOfFreedom".)'),
     fileInput(ns('file_input'),'Upload .csv File',accept='.csv'),
-    hr(),
+    hr()
     #fluidRow(column(4,textOutput(ns('go_message'))))
-    br()
   )
 
 }

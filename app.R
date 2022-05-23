@@ -14,7 +14,7 @@ library(metafor)
 source('./R/utils.R')
 source('./R/inputAndDTmodule.R')
 source('./R/resultsModule.R')
-source('./R/antonio_wm_4_5_22.R')
+source('./R/weightedMedian.R')
 
 
 source('./R/DOE/DoEUnilateralDL.R')
@@ -62,12 +62,16 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
     br(),
     
     tabsetPanel(
+      
+        tabPanel("0. About", aboutUI('about')),
         
         tabPanel("1. Data Input", inputUI('input')),
         
         tabPanel("2. Decision Tree",DT_UI('DT')),
         
-        tabPanel("3. Fit Model",resultsUI('results'))
+        tabPanel("3. Fit Model",resultsUI('results')),
+        
+        selected='1. Data Input',
         
     ),
     
@@ -144,6 +148,8 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
+  
+    about_server('about')
     
     vars_in <- input_server('input')
     
