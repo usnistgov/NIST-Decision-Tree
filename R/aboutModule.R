@@ -20,9 +20,9 @@ aboutUI = function(id) {
       particular data.
       The NDT then carries out the preferred statistical procedure, and displays
       the results via plots, tables, and a downloadable report. Results include the
-      KCRV estimate and associated uncertainties (standard and expanded), 
+      KCRV estimate and associated uncertainties, 
       an estiamte of dark uncertainty (where applicable), and the MRA 
-      degrees of equivalence and their uncertainties, among other results.
+      Degrees of Equivalence and their uncertainties, among other results.
       For detailed instructions regarding the application, please click the 
       button below to download the User Manual.
       
