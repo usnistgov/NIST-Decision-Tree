@@ -504,11 +504,10 @@ DT_server <- function(id,vars_in) {
         standard_unc = vars_in()$standard_unc
         dof = vars_in()$dof
         
-        res = metafor::rma(yi = measured_vals,
-                           sei = standard_unc,
-                           method = "DL")
+        res = DerSimonianLaird(x = measured_vals,
+                               ux = standard_unc)
         
-        pval = signif(res$QEp,2)
+        pval = signif(res$Qp,3)
         
         if(pval < .001) {
           pval = 'p < 0.001'
@@ -517,7 +516,7 @@ DT_server <- function(id,vars_in) {
         Q_test_dof = length(measured_vals) - 1
         
         paste("p-value = ",pval,' (A low p-value suggests heterogeneity).', '\n',
-              "Q = ",signif(res$QE,4),' (Reference Distribution: Chi-Square with ',
+              "Q = ",signif(res$Q,4),' (Reference Distribution: Chi-Square with ',
               Q_test_dof,' Degrees of Freedom)','\n',
               "tau est. = ",signif(sqrt(res$tau2),4),'\n',
               "tau/median(x) = ",signif(sqrt(res$tau2)/median(measured_vals),4),'\n',

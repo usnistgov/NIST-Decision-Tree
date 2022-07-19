@@ -296,10 +296,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         # adaptive weighted average
         if(grepl('average',the_proc,TRUE)) {
-          DLres = metafor::rma(yi=x, 
-                               sei=u,
-                               level=95,
-                               method="DL")
+          DLres = DerSimonianLaird(x=x,ux=u)
+          
+          rma_res = metafor::rma(yi=x,sei=u)
           
           res$method = "Adaptive Weighted Average"
           
@@ -320,8 +319,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$mu_lower_dslbs = DLres$beta - hw_dslbs
           
           res$mu = DLres$beta
-          res$mu_upper = DLres$ci.ub
-          res$mu_lower = DLres$ci.lb
+          res$mu_upper = rma_res$ci.ub
+          res$mu_lower = rma_res$ci.lb
           res$tau = sqrt(DLres$tau2)
           res$se = DLres$se
           
@@ -555,10 +554,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           withProgress({
           
-          DLres = metafor::rma(yi=data$Result[data$Include], 
-                               sei=data$Uncertainty[data$Include],
-                               level=95,
-                               method="DL")
+          DLres = DerSimonianLaird(x=data$Result[data$Include], 
+                                   ux=data$Uncertainty[data$Include])
           
 
           
