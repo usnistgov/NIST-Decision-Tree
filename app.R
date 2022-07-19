@@ -7,6 +7,7 @@ library(ggplot2)
 library(R2jags)
 library(rhandsontable)
 library(tinytex)
+library(metafor)
 # also need boot, extraDistr, rmarkdown, knitr
 
 

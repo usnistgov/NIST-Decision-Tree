@@ -55,15 +55,15 @@
 ## ------------------------------------------------------------
 ## Cochran's Q
 
-cochranQ = function (x, ux, digits=5)
-{
-    w = 1/ux^2
-    mu = sum(w*x)/sum(w)
-    Q = sum(w*(x-mu)^2)
-    Qnu = length(x)-1
-    Qp = 1-pchisq(Q, df=Qnu)
-    return(signif(c(Q=Q, nu=Qnu, p=Qp), digits))
-}
+# cochranQ = function (x, ux, digits=5)
+# {
+#     w = 1/ux^2
+#     mu = sum(w*x)/sum(w)
+#     Q = sum(w*(x-mu)^2)
+#     Qnu = length(x)-1
+#     Qp = 1-pchisq(Q, df=Qnu)
+#     return(signif(c(Q=Q, nu=Qnu, p=Qp), digits))
+# }
 
 #cochranQ(x=PCB28$x, ux=PCB28$u, digits=5)
 ##          Q         nu          p 
