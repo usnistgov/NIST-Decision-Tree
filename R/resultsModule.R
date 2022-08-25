@@ -298,7 +298,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         if(grepl('average',the_proc,TRUE)) {
           DLres = DerSimonianLaird(x=x,ux=u)
           
-          rma_res = metafor::rma(yi=x,sei=u)
+          rma_res = metafor::rma(yi=x,sei=u,method="DL")
           
           res$method = "Adaptive Weighted Average"
           
