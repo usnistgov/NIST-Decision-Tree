@@ -60,6 +60,8 @@ input_server <- function(id) {
           need(colnames(the_data) == c('Laboratory','MeasuredValues','StdUnc','DegreesOfFreedom'),
                paste('Column names of the .csv file do not match the expected column names.',
                      'Columns headings should read "Laboratory","MeasuredValues","StdUnc","DegreesOfFreedom".')),
+          need(length(the_data$Laboratory) == length(unique(the_data$Laboratory)),
+               "Duplicate Lab Names detected in the file. Please use unique lab names."),
           need(all(is.numeric(the_data$MeasuredValues)),
                "All MeasuredValues must be numeric."),
           need(all(is.numeric(the_data$StdUnc)),
@@ -105,6 +107,7 @@ input_server <- function(id) {
           
         }
         
+        # figure out number of decimal places
         min_val = min(abs(init.df[,3:4]))
         decs = min_val - round(min_val,0)
         decs = format(decs,scientific = FALSE)
@@ -159,6 +162,11 @@ input_server <- function(id) {
         
         colnames(data) = c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
         
+        validate(
+          need(length(data$Laboratory) == length(unique(data$Laboratory)),
+               "Duplicate lab names detected. Please use unique lab names.")
+        )
+        
         data$upper = data$Result + data$Uncertainty
         data$lower = data$Result - data$Uncertainty
         data$Include = as.character(as.logical(data$Include))
@@ -211,6 +219,11 @@ input_server <- function(id) {
         if(sum(which_to_compute) < 3) {
           validated(-1)
           return("Need at least 3 observations to use the decision tree.")
+        }
+        
+        if(length(the_data$Laboratory) != length(unique(the_data$Laboratory))) {
+          validated(-1)
+          return("Cannot use duplicate lab names.")
         }
         
         validated(1)
