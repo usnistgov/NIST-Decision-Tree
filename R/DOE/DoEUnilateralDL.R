@@ -185,7 +185,7 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     DoE.U.excluded = rep(NA,n.All-nI)
     D.excluded = array(NA,dim=c(K,n.All-nI)) 
     
-    DoE.x.excluded = x.excluded-as.numeric(DLRes$estimate)
+    DoE.x.excluded = x.excluded-as.numeric(DLRes$beta)
     names(DoE.x.excluded) = lab.excluded
     for(j in 1:(n.All-nI)){
       if (LOO) {
