@@ -8,6 +8,7 @@ library(R2jags)
 library(rhandsontable)
 library(tinytex)
 library(metafor)
+library(rmutil)
 # also need boot, extraDistr, rmarkdown, knitr
 
 

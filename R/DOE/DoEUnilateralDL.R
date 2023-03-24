@@ -137,40 +137,60 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     indexInf = (nu == Inf)
     ## Column j of D will have a sample from the
     ## bootstrap distribution of x[j]-mu
-    D = array(dim=c(K,nI))
-    dimnames(D)[[2]] = lab
+    D_pred = array(dim=c(K,nI))
+    D_trade = array(dim=c(K,nI))
+    dimnames(D_pred)[[2]] = lab
+    dimnames(D_trade)[[2]] = lab
     muB = numeric(K)
     for (k in 1:K)
     {
       tau2B = sampleFromTau2Dist(x,u) 
       
-      xB = rnorm(nI, mean=mu, sd=sqrt(tau2B + u^2))
+      xB_pred = rnorm(nI, mean=mu, sd=sqrt(tau2B + u^2))
+      xB_trade = rnorm(nI, mean=mu, sd=sqrt(u^2))
+      
       uB = rep(NA, nI)
-      if (is.null(nu)) {uB = u
+      if (is.null(nu)) {
+        uB = u
+        
       } else {
         uB[indexInf] = u[indexInf]
-        uB[!indexInf] = u[!indexInf] *
-          sqrt(nu[!indexInf] /
-                 rchisq(sum(!indexInf), df=nu[!indexInf]))}
-      muB[k] = rma(yi=xB, sei=uB, method="DL",
+        uB[!indexInf] = u[!indexInf]*sqrt(nu[!indexInf]/rchisq(sum(!indexInf), df=nu[!indexInf]))
+      }
+      
+      muB[k] = rma(yi=xB_pred, sei=uB, method="DL",
                    knha=FALSE)$b
-      D[k,] = xB - as.vector(muB[k])
+      
+      
+      D_pred[k,] = xB_pred - as.vector(muB[k])
+      D_trade[k,] = xB_trade - as.vector(muB[k])
     }
+    
     DoE.x = x - as.vector(mu)
     names(DoE.x) = lab
     ## AP 2019-Mar-30: First center each column of D at zero, then
     ## shift it to become centered at the corresponding value of DoE.x
     ## Needs to be done only for the MRA version of the DoEs
-    DC = sweep(D, 2, apply(D, 2, mean))
-    D = sweep(DC, 2, -DoE.x)
+    DC_pred = sweep(D_pred, 2, apply(D_pred, 2, mean))
+    D_pred = sweep(DC_pred, 2, -DoE.x)
+    
+    DC_trade = sweep(D_trade, 2, apply(D_trade, 2, mean))
+    D_trade = sweep(DC_trade, 2, -DoE.x)
   }                 ############################This is the end of the LOO if/else
   
-  DoE.Lwr = apply(D, 2, function (x) {quantile(x, probs=(1-coverageProb)/2)})
-  DoE.Upr = apply(D, 2, function (x) {quantile(x, probs=(1+coverageProb)/2)})
-  DoE.U = rep(NA,nI)
-  for (j in 1:nI) {
-    DoE.U[j] = symmetricalBootstrapCI(D[,j], DoE.x[j], coverageProb) }
+  DoE.Lwr.Pred = apply(D_pred, 2, function (x) {quantile(x, probs=(1-coverageProb)/2)})
+  DoE.Upr.Pred = apply(D_pred, 2, function (x) {quantile(x, probs=(1+coverageProb)/2)})
   
+  DoE.Lwr.Trade = apply(D_trade, 2, function (x) {quantile(x, probs=(1-coverageProb)/2)})
+  DoE.Upr.Trade = apply(D_trade, 2, function (x) {quantile(x, probs=(1+coverageProb)/2)})
+  
+  DoE.U.Pred = rep(NA,nI)
+  DoE.U.Trade = rep(NA,nI)
+  
+  for (j in 1:nI) {
+    DoE.U.Pred[j] = symmetricalBootstrapCI(D_pred[,j], DoE.x[j], coverageProb) 
+    DoE.U.Trade[j] = symmetricalBootstrapCI(D_trade[,j], DoE.x[j], coverageProb) 
+  }
   
   
   
@@ -182,31 +202,46 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     nu.excluded=nu.All[!sanitize]
     lab.excluded=lab.All[!sanitize]
     
-    DoE.U.excluded = rep(NA,n.All-nI)
-    D.excluded = array(NA,dim=c(K,n.All-nI)) 
+    DoE.U.excluded.pred = rep(NA,n.All-nI)
+    D.excluded.pred = array(NA,dim=c(K,n.All-nI)) 
+    
+    DoE.U.excluded.trade = rep(NA,n.All-nI)
+    D.excluded.trade = array(NA,dim=c(K,n.All-nI)) 
     
     DoE.x.excluded = x.excluded-as.numeric(DLRes$beta)
     names(DoE.x.excluded) = lab.excluded
+    
     for(j in 1:(n.All-nI)){
       if (LOO) {
-        DoE.U.excluded[j]=1.96*sqrt(u.excluded[j]^2 + var(mujB) + DLRes$tau2) ### AP CHECK: is mujB right here?
+        DoE.U.excluded.pred[j]=1.96*sqrt(u.excluded[j]^2 + var(mujB) + DLRes$tau2) ### AP CHECK: is mujB right here?
+        DoE.U.excluded.trade[j]=1.96*sqrt(u.excluded[j]^2 + var(mujB))
       }else{
-        DoE.U.excluded[j]=1.96*sqrt(u.excluded[j]^2 + var(muB) + DLRes$tau2) 
+        DoE.U.excluded.pred[j]=1.96*sqrt(u.excluded[j]^2 + var(muB) + DLRes$tau2) 
+        DoE.U.excluded.trade[j]=1.96*sqrt(u.excluded[j]^2 + var(muB)) 
       }
-      D.excluded[,j]=rnorm(K, mean=DoE.x.excluded[j], sd=sqrt(u.excluded[j]^2 + DLRes$tau2)) ### AP CHECK: Need to fill this in for bilateral DoE code, what with?
+      D.excluded.pred[,j]=rnorm(K, mean=DoE.x.excluded[j], sd=sqrt(u.excluded[j]^2 + DLRes$tau2))
+      D.excluded.trade[,j]=rnorm(K, mean=DoE.x.excluded[j], sd=sqrt(u.excluded[j]^2))
     }  
     
     # D.excluded = array(rep(DoE.x.excluded,each=K),dim=c(K,n.All-nI)) ## This didn't seem to have enough variability
-    dimnames(D.excluded)[[2]] = as.list(lab.excluded)
+    dimnames(D.excluded.pred)[[2]] = as.list(lab.excluded)
+    dimnames(D.excluded.trade)[[2]] = as.list(lab.excluded)
     
     DoE.x=c(DoE.x,DoE.x.excluded)
-    DoE.U=c(DoE.U,DoE.U.excluded)
-    DoE.Lwr=c(DoE.Lwr,DoE.x.excluded-DoE.U.excluded) ### might modify the 1.96 later 
-    DoE.Upr=c(DoE.Upr,DoE.x.excluded+DoE.U.excluded)
+    
+    DoE.U.Pred=c(DoE.U.Pred,DoE.U.excluded.pred)
+    DoE.U.Trade=c(DoE.U.Trade,DoE.U.excluded.trade)
+    
+    DoE.Lwr.Pred=c(DoE.Lwr.Pred,DoE.x.excluded-DoE.U.excluded.pred) 
+    DoE.Upr.Pred=c(DoE.Upr.Pred,DoE.x.excluded+DoE.U.excluded.pred)
+    
+    DoE.Lwr.Trade=c(DoE.Lwr.Trade,DoE.x.excluded-DoE.U.excluded.trade) 
+    DoE.Upr.Trade=c(DoE.Upr.Trade,DoE.x.excluded+DoE.U.excluded.trade)
     
     lab.outlabel=c(lab,lab.excluded)
     
-    D=cbind(D,D.excluded)
+    D_pred =cbind(D_pred,D.excluded.pred)
+    D_trade =cbind(D_trade,D.excluded.trade)
     
   }else{
     lab.outlabel=lab.All
@@ -214,8 +249,14 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
   
   
   ### Add results for excluded labs 
-  results = data.frame(Lab=lab.outlabel, DoE.x=DoE.x, DoE.U95=DoE.U,
-                       DoE.Lwr=DoE.Lwr, DoE.Upr=DoE.Upr)
+  results = data.frame(Lab=lab.outlabel, 
+                       DoE.x=DoE.x, 
+                       DoE.U95.Pred=DoE.U.Pred,
+                       DoE.U95.Trade=DoE.U.Trade,
+                       DoE.Lwr.Pred=DoE.Lwr.Pred, 
+                       DoE.Lwr.Trade=DoE.Lwr.Trade, 
+                       DoE.Upr.Pred=DoE.Upr.Pred,
+                       DoE.Upr.Trade=DoE.Upr.Trade)
   
-  return(invisible(list(D=D,DoE=results, DoEwarn=testWarn)))
+  return(invisible(list(D_pred=D_pred,D_trade=D_trade,DoE=results, DoEwarn=testWarn)))
 }

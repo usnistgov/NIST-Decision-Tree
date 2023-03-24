@@ -15,6 +15,8 @@ resultsUI <- function(id) {
     br(),
     uiOutput(ns('download_button_ui')),
     br(),
+    uiOutput(ns('doe_type_radio_buttons')),
+    br(),
     fluidRow(
       column(6,plotOutput(ns('model_plot_v2'))),
       column(6,plotOutput(ns('doe_plot')))
@@ -23,6 +25,10 @@ resultsUI <- function(id) {
     h4("Unilateral Degrees of Equivalence Table"),
     br(),
     DT::dataTableOutput(ns('doe_table'),width='60%'),
+    br(),
+    br(),
+    uiOutput(ns('jags_diagnostics_header')),
+    DT::dataTableOutput(ns('diagnostic_table'),width='50%'),
     br()
     
   )
@@ -72,6 +78,18 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
       })
       
+      output$doe_type_radio_buttons = renderUI({
+        
+        if(is.null(res())) {
+          return(NULL)
+        }
+        return(tagList(
+          radioButtons(session$ns("doe_type"), label = "Type of DoEs to Display",
+                       choices = list("DoEs for Prediction"=1,"DoEs for Trade"=2))
+        ))
+        
+      })
+      
       output$init_message = renderUI({
         
         sp = selected_procedure()
@@ -82,6 +100,17 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         return(p(""))
         
+        
+      })
+      
+      output$jags_diagnostics_header = renderUI({
+        
+        if(is.null(res()) | is.null(res()$diagnostics)){
+          return(NULL)
+        }  
+        
+        return(h4("MCMC Sampler Diagnostics"))
+      
         
       })
       
@@ -105,13 +134,12 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 column(3,
                   numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
                 ),
-                column(3,
+                column(4,
                   numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
                                value=4,
                                min=1,
                                step=1)
                 )
-                  
               ),
               br(),
               hr(),
@@ -134,13 +162,12 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 column(3,
                        numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
                 ),
-                column(3,
+                column(4,
                        numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
                                     value=4,
                                     min=1,
                                     step=1)
                 )
-                
               ),
               br(),
               hr(),
@@ -164,13 +191,12 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                 column(3,
                        numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
                 ),
-                column(3,
+                column(4,
                        numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
                                     value=4,
                                     min=1,
                                     step=1)
                 )
-                
               ),
               hr(),
               h3("MCMC Parameters",style='text-align:center'),
@@ -324,6 +350,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$tau = sqrt(DLres$tau2)
           res$se = DLres$se
           
+          res$diagnostics = NULL
           res$proc_complete = TRUE
           
 
@@ -353,6 +380,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$mu_lower = bt_res$Lwr
           res$tau = NULL
           res$boot_samples = bt_res$muB
+          res$diagnostics = NULL
           
           
           res$proc_complete = TRUE
@@ -469,6 +497,7 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           res$tau_lower = quantile(p_samples$tau,.025)
           res$tau_upper = quantile(p_samples$tau,.975)
           res$p_samples = p_samples
+          res$diagnostics = jags_out$BUGSoutput$summary[,c('Rhat','n.eff')]
           
         }
 
@@ -542,6 +571,21 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
       })
       
+      # jags diagnostics
+      observeEvent(res,{
+        
+        output$diagnostic_table = DT::renderDataTable({
+          
+          if(is.null(res())) {
+            return(NULL)
+          }
+          
+          return(res()$diagnostics)
+          
+        },options=list(searching=FALSE,paging=FALSE))
+        
+      })
+      
       # degrees of equivalence
       doe_res = eventReactive(input$run_method, {
         
@@ -581,29 +625,35 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           vars_in = vars_in()
           data = vars_in()$the_data
           
-          distances = matrix(0,nrow=length(p_samples$mu),ncol=nrow(vars_in()$the_data))
-          colnames(distances) = data$Laboratory
+          distances_pred = matrix(0,nrow=length(p_samples$mu),ncol=nrow(vars_in()$the_data))
+          distances_trade = matrix(0,nrow=length(p_samples$mu),ncol=nrow(vars_in()$the_data))
+          colnames(distances_pred) = data$Laboratory
+          colnames(distances_trade) = data$Laboratory
           
           included_inds = which(vars_in$which_to_compute)
-          counter = 1
+          counter = 1 # indexes the mcmc lab effects
           
           # go through each lab
-          for(jj in 1:ncol(distances)) {
+          for(jj in 1:ncol(distances_pred)) {
             
             # if lab was included in MCMC, use MCMC samples 
             if(vars_in$which_to_compute[jj]) {
               
               # lab random effect - KCRV
-              sd_vec = sqrt(p_samples$tau^2 + p_samples$sigma[,counter]^2)
+              sd_vec_pred = sqrt(p_samples$tau^2 + p_samples$sigma[,counter]^2)
+              sd_vec_trade = sqrt(p_samples$sigma[,counter]^2)
               
-              distances[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec)
+              distances_pred[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec_pred)
+              distances_trade[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec_trade)
               counter = counter + 1
             
             # if lab not included in model simulate from input data  
             } else {
             
-              sd_vec = sqrt(p_samples$tau^2 + data$Uncertainty[jj]^2)
-              distances[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec)
+              sd_vec_pred = sqrt(p_samples$tau^2 + data$Uncertainty[jj]^2)
+              sd_vec_trade = sqrt(data$Uncertainty[jj]^2)
+              distances_pred[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec_pred)
+              distances_trade[,jj] = data$Result[jj] - p_samples$mu + rnorm(length(p_samples$mu),mean=0,sd=sd_vec_trade)
             
             }
             
@@ -611,22 +661,33 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           }
           
           DoE.x = data$Result - res()$mu 
-          DoE.U = apply(distances,2,sd)
+          DoE.U.pred = apply(distances_pred,2,sd)
+          DoE.U.trade = apply(distances_trade,2,sd)
           
-          quants_lwr = rep(0,ncol(distances))
-          quants_upr = rep(0,ncol(distances))
+          quants_lwr_pred = rep(0,ncol(distances_pred))
+          quants_upr_pred = rep(0,ncol(distances_trade))
+          quants_lwr_trade = rep(0,ncol(distances_pred))
+          quants_upr_trade = rep(0,ncol(distances_trade))
           
-          for(ii in 1:ncol(distances)) {
-            hw = symmetricalBootstrapCI(distances[,ii],DoE.x[ii],.95)
-            quants_lwr[ii] = DoE.x[ii] - hw
-            quants_upr[ii] = DoE.x[ii] + hw
+          for(ii in 1:ncol(distances_pred)) {
+            hw_pred = symmetricalBootstrapCI(distances_pred[,ii],DoE.x[ii],.95)
+            hw_trade = symmetricalBootstrapCI(distances_trade[,ii],DoE.x[ii],.95)
+            
+            quants_lwr_pred[ii] = DoE.x[ii] - hw_pred
+            quants_upr_pred[ii] = DoE.x[ii] + hw_pred
+            
+            quants_lwr_trade[ii] = DoE.x[ii] - hw_trade
+            quants_upr_trade[ii] = DoE.x[ii] + hw_trade
           }
           
           outdf = data.frame(Lab=data$Laboratory,
                              DoE.x=DoE.x, 
-                             DoE.U95=DoE.U*2,
-                             DoE.Lwr=quants_lwr, 
-                             DoE.Upr=quants_upr)
+                             DoE.U95.Pred=DoE.U.pred*2,
+                             DoE.U95.Trade=DoE.U.trade*2,
+                             DoE.Lwr.Pred=quants_lwr_pred, 
+                             DoE.Upr.Pred=quants_upr_pred,
+                             DoE.Lwr.Trade=quants_lwr_trade, 
+                             DoE.Upr.Trade=quants_upr_trade)
           
           return(list(DoE=outdf))
           
@@ -670,9 +731,12 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           
           outdf = data.frame(Lab=data$Laboratory,
                              DoE.x=DoE.x, 
-                             DoE.U95=DoE.U*2,
-                             DoE.Lwr=quants_lwr, 
-                             DoE.Upr=quants_upr)
+                             DoE.U95.Pred=DoE.U*2,
+                             DoE.U95.Trade=DoE.U*2,
+                             DoE.Lwr.Pred=quants_lwr, 
+                             DoE.Upr.Pred=quants_upr,
+                             DoE.Lwr.Trade=quants_lwr,
+                             DoE.Upr.Trade=quants_upr)
           
           return(list(DoE=outdf))
           
@@ -723,15 +787,30 @@ resultsServer <- function(id,vars_in,selected_procedure) {
       
         output$doe_table = DT::renderDataTable({
           
-          if(is.null(doe_res())) {
+          if(is.null(doe_res()) | is.null(input$doe_type)) {
             return(NULL)
           }
           
-          data = doe_res()$DoE
+          doe_data = doe_res()$DoE
           
-          data[,2:5] = signif(data[,2:5],input$nsd)
+          doe_data[,2:ncol(doe_data)] = signif(doe_data[,2:ncol(doe_data)],input$nsd)
           
-          return(data)
+          doe_type = input$doe_type
+          
+          if(doe_type == "1") {
+            doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
+            doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
+            doe_data$DoE.U95 = doe_data$DoE.U95.Pred
+            
+          } else if(doe_type == "2") {
+            doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
+            doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
+            doe_data$DoE.U95 = doe_data$DoE.U95.Trade
+          }
+          
+          outdf = doe_data[,c("Lab","DoE.x","DoE.U95","DoE.Lwr","DoE.Upr")]
+          
+          return(outdf)
           
           },
           options=list(searching=FALSE,paging=FALSE),
@@ -744,14 +823,28 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         output$doe_plot = renderPlot({
           
-          if(is.null(doe_res())) {
+          if(is.null(doe_res()) | is.null(input$doe_type)) {
             return(NULL)
           }
           
-          data = doe_res()$DoE
+          doe_data = doe_res()$DoE
           vars_in = vars_in()
+          doe_type = input$doe_type
           
-          return(DoEplot(data,
+          if(doe_type == "1") {
+            doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
+            doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
+            doe_data$DoE.U95 = doe_data$DoE.U95.Pred
+            
+          } else if(doe_type == "2") {
+            doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
+            doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
+            doe_data$DoE.U95 = doe_data$DoE.U95.Trade
+          }
+          
+          outdf = doe_data[,c("Lab","DoE.x","DoE.U95","DoE.Lwr","DoE.Upr")]
+          
+          return(DoEplot(doe_data,
                          'Unilateral Degrees of Equivalence',
                          exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute]))
           
@@ -782,6 +875,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           the_proc = isolate(selected_procedure())
           nsd = input$nsd
           doe_res = doe_res()
+          doe_type = input$doe_type
+          diagnostics = res$diagnostics
           
           if(grepl('recommend',the_proc,ignore.case = T)) {
             the_proc = strsplit(the_proc,'\\(')[[1]][1]
@@ -793,7 +888,9 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                             vars_in = vars_in,
                                             the_proc = the_proc,
                                             doe_res = doe_res,
-                                            nsd = nsd))
+                                            nsd = nsd,
+                                            doe_type = doe_type,
+                                            diagnostics = diagnostics))
           })
           
           file.copy('./R/ResultsDownload.pdf',file)

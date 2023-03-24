@@ -7,6 +7,8 @@ params:
   the_proc: NA
   doe_res: NA
   nsd: NA
+  doe_type: NA
+  diagnostics: NA
 
 ---
 
@@ -21,12 +23,22 @@ res = params$res
 vars_in = params$vars_in
 the_proc = params$the_proc
 doe_res = params$doe_res
+doe_type = params$doe_type
+diagnostics = params$diagnostics
 
 knitr::kable(
   vars_in$the_data
 )
 
 cat(paste('Date:', Sys.Date(),'  \n'))
+if(doe_type == '1') {
+  doe_name = 'Prediction'
+  
+} else if(doe_type == '2') {
+  doe_name = "Trade"
+}
+
+cat(paste("Type of DoE: Degrees of Equivalence for ",doe_name, '  \n'))
 cat(paste('Selected Procedure:', the_proc,'  \n'))
 
   # DSL
@@ -108,8 +120,10 @@ Miao-Gel-Gastwirth test of Symmetry:
 cat(paste("p =", signif(sym_res$p.value,nsd)))
 ```
 
+\newpage
+
 ## Plots
-```{r, fig.height=5, fig.width=7 }
+```{r, fig.height=4, fig.width=6 }
 
 if(grepl('average',the_proc,TRUE)) {
   kcrv.unc = max(res$se,res$se_dslbs)
@@ -129,17 +143,46 @@ KCplot(val=vars_in$the_data$Result,
                  exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
 ```
 
-```{r, fig.height=5, fig.width=7 }
+```{r, fig.height=4, fig.width=6 }
 
-doe_table = doe_res$DoE
-doe_table[,2:5] = signif(doe_table[,2:5],nsd)
+doe_data = doe_res$DoE
+doe_data[,2:ncol(doe_data)] = signif(doe_data[,2:ncol(doe_data)],nsd)
 
-DoEplot(doe_table,
+if(doe_type == "1") {
+  doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
+  doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
+  doe_data$DoE.U95 = doe_data$DoE.U95.Pred
+  
+} else if(doe_type == "2") {
+  doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
+  doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
+  doe_data$DoE.U95 = doe_data$DoE.U95.Trade
+}
+
+outdf = doe_data[,c("Lab","DoE.x","DoE.U95","DoE.Lwr","DoE.Upr")]
+
+DoEplot(outdf,
         'Unilateral Degrees of Equivalence',
         exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
+```
+
+\newpage
+
+## DoE Table
+```{r}
 
 knitr::kable(
-  doe_table
+  outdf
 )
+```
+
+
+## MCMC Sampler Diagnostics Table (if applicable)
+```{r}
+
+if(!is.null(diagnostics)) {
+  knitr::kable(diagnostics)
+}
+
 ```
 
