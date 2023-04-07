@@ -109,7 +109,11 @@ resultsServer <- function(id,vars_in,selected_procedure) {
           return(NULL)
         }  
         
-        return(h4("MCMC Sampler Diagnostics"))
+        return(tagList(h4("MCMC Sampler Diagnostics"),
+                       br(),
+                       p("If one of the Bayesian models is run (Hierarchical Gauss-Gauss, Hierarchical Laplace-Gauss, or Hierarchical Skew-Student-t), then diagnostics for the MCMC sampler will be given below. 
+                         As a general recommendation, if any of the R-hat values are greater than 1.05, then the sampler may not have reached equilibrium, and the 'Total Number of MCMC Steps' should be increased, and the run repeated. 
+                         The 'Number of MCMC Warm-Up Steps' should be about half of the 'Total Number of MCMC Steps.' The 'Effective Sample Size' (n.eff) is approximately the size of the MCMC sample that the results are based on.")))
       
         
       })
@@ -427,6 +431,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                           x=x, 
                           u2=u^2, 
                           dof=dof, 
+                          mu_prior_loc = mean(x),
+                          mu_prior_scale = (1/sqrt(3))*sd(x),
                           tau_prior_scale=isolate(input$tau_prior_scale),
                           sigma_prior_scale = isolate(input$sigma_prior_scale))
         
@@ -576,11 +582,15 @@ resultsServer <- function(id,vars_in,selected_procedure) {
         
         output$diagnostic_table = DT::renderDataTable({
           
-          if(is.null(res())) {
+          if(is.null(res()) | is.null(res()$diagnostics)) {
             return(NULL)
           }
           
-          return(res()$diagnostics)
+          
+          diagnostics = as.data.frame(res()$diagnostics)
+          diagnostics$Rhat = round(diagnostics$Rhat,3)
+          
+          return(diagnostics)
           
         },options=list(searching=FALSE,paging=FALSE))
         
@@ -835,17 +845,19 @@ resultsServer <- function(id,vars_in,selected_procedure) {
             doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
             doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
             doe_data$DoE.U95 = doe_data$DoE.U95.Pred
+            doe_plot_title = 'Unilateral Degrees of Equivalence for Prediction'
             
           } else if(doe_type == "2") {
             doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
             doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
             doe_data$DoE.U95 = doe_data$DoE.U95.Trade
+            doe_plot_title = 'Unilateral Degrees of Equivalence for Trade'
           }
           
           outdf = doe_data[,c("Lab","DoE.x","DoE.U95","DoE.Lwr","DoE.Upr")]
           
           return(DoEplot(doe_data,
-                         'Unilateral Degrees of Equivalence',
+                         doe_plot_title,
                          exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute]))
           
         

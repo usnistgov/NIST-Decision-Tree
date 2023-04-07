@@ -152,17 +152,19 @@ if(doe_type == "1") {
   doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
   doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
   doe_data$DoE.U95 = doe_data$DoE.U95.Pred
+  doe_plot_title = 'Unilateral Degrees of Equivalence for Prediction'
   
 } else if(doe_type == "2") {
   doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
   doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
   doe_data$DoE.U95 = doe_data$DoE.U95.Trade
+  doe_plot_title = 'Unilateral Degrees of Equivalence for Trade'
 }
 
 outdf = doe_data[,c("Lab","DoE.x","DoE.U95","DoE.Lwr","DoE.Upr")]
 
 DoEplot(outdf,
-        'Unilateral Degrees of Equivalence',
+        doe_plot_title,
         exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
 ```
 
@@ -178,9 +180,18 @@ knitr::kable(
 
 
 ## MCMC Sampler Diagnostics Table (if applicable)
+
+If one of the Bayesian models is run (Hierarchical Gauss-Gauss, Hierarchical Laplace-Gauss, or Hierarchical Skew-Student-t), then diagnostics for the MCMC sampler will be given below. As a general recommendation, if any of the R-hat values are greater than 1.05, then the sampler may not have reached equilibrium, and the “Total Number of MCMC Steps” should be increased, and the run repeated. The “Number of MCMC Warm-Up Steps” should be about half of the “Total Number of MCMC Steps.” The “Effective Sample Size” (n.eff) is approximately the size of the MCMC sample that the results are based on.
+
+
 ```{r}
 
 if(!is.null(diagnostics)) {
+  
+  diagnostics = as.data.frame(diagnostics)
+  
+  diagnostics$Rhat = round(diagnostics$Rhat,3)
+  
   knitr::kable(diagnostics)
 }
 
