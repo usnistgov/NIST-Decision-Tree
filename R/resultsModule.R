@@ -35,7 +35,7 @@ resultsUI <- function(id) {
   
 }
 
-resultsServer <- function(id,vars_in,selected_procedure) {
+resultsServer <- function(id,vars_in,selected_procedure,version) {
   moduleServer(
     id,
     function(input,output,session) {
@@ -902,7 +902,8 @@ resultsServer <- function(id,vars_in,selected_procedure) {
                                             doe_res = doe_res,
                                             nsd = nsd,
                                             doe_type = doe_type,
-                                            diagnostics = diagnostics))
+                                            diagnostics = diagnostics,
+                                            version = version))
           })
           
           file.copy('./R/ResultsDownload.pdf',file)

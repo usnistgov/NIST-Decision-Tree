@@ -9,6 +9,7 @@ params:
   nsd: NA
   doe_type: NA
   diagnostics: NA
+  version: NA
 
 ---
 
@@ -38,6 +39,7 @@ if(doe_type == '1') {
   doe_name = "Trade"
 }
 
+cat(paste("Version Number:",version,'  \n'))
 cat(paste("Type of DoE: Degrees of Equivalence for ",doe_name, '  \n'))
 cat(paste('Selected Procedure:', the_proc,'  \n'))
 

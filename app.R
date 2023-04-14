@@ -24,6 +24,8 @@ source('./R/DOE/sampleFromTau2Dist.R')
 source('./R/DOE/symmetricalBootstrapCI.R')
 source('./R/DOE/KCplotDoEplot_6_22.R')
 
+version = "1.0.0"
+
 
 ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
     
@@ -72,7 +74,7 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
     column(width=11,
     
     titlePanel("NIST Decision Tree for Key Comparisons"),
-    br(),
+    h4(paste("Version",version),style="text-align:right"),
     
     tabsetPanel(
       
@@ -166,7 +168,7 @@ server <- function(input, output, session) {
     
     selected_procedure <- DT_server('DT', vars_in)
     
-    resultsServer('results', vars_in, selected_procedure)
+    resultsServer('results', vars_in, selected_procedure, version)
     
 }
 
