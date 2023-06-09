@@ -1,9 +1,10 @@
 FROM rocker/shiny:4.1.1
 
-RUN apt-get update -y
-RUN apt-get install jags -y 
-RUN apt-get install texlive-latex-recommended texlive-fonts-recommended -y
-RUN apt-get install texlive-latex-extra -y
+RUN apt-get update -y && apt-get install -y \
+    jags \
+    texlive-latex-recommended \
+    texlive-fonts-recommended \
+    texlive-latex-extra
 
 RUN R -e "install.packages(c('shiny','shinythemes','symmetry','metafor'))"
 RUN R -e "install.packages('rmutil')"
@@ -17,6 +18,7 @@ RUN R -e "install.packages('rmarkdown')"
 RUN R -e "install.packages('extraDistr')"
 RUN R -e "install.packages('boot')"
 RUN R -e "tinytex::install_tinytex()"
+RUN R -e "install.packages('shinycssloaders')"
 
 COPY . /srv/shiny-server/
 

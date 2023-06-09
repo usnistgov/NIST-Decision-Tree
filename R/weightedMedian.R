@@ -136,53 +136,6 @@ weightedMedian = function (x, ux, nux=NULL, K=10000, conf.level=0.95,
                           Lwr=bootCI[1], Upr=bootCI[2], muB=muB)))
 }
 
-## ######################################################################
-## ##
-## ## EXAMPLE: IAEA (2021, Table 3: Data for GRESP and for std13)
-## ## Delta 2H expressed in permil
-## 
-## ## @TechReport{      iaea-2021,
-## ##   author        = {{IAEA}},
-## ##   year          = {2021},
-## ##   title         = {Certification Report on Value Assignment for the
-## ##                   $\delta{}^{2}\mbox{H}$ and $\delta{}^{18}\mbox{O}$ 
-## ##                   Stable Isotopic Composition in the
-## ##                   Water Reference Material GRESP
-## ##                   (Greenland Summit Precipitation)},
-## ##   institution   = {International Atomic Energy Agency},
-## ##   type = {IAEA Analytical Quality in Nuclear Applications Series},
-## ##   number        = {63},
-## ##   note          = {IAEA/AQ/63},		  
-## ##   address       = {Vienna, Austria}}
-## 
-# lab = c("G-FD", "G-LGR", "G-PiT", "G-Pi1", "G-PiSo", "G-PiS",
-#         "G-CrTCEA", "G-UFZ", "S-FD", "S-LGR", "S-Pi1", "S-PiSo")
-# x = c(-259.2, -257.9, -257.9, -258.3, -257.8, -257.7, -258, -257.5,
-#       -259.6, -257.8, -257.8, -259)
-# ux = c(0.9, 0.9, 0.3, 0.7, 0.9, 1.1, 0.8, 1, 0.8, 0.8, 1.1, 0.5)
-# nux = c(11, 119, 19, 941, 261, 3618, 49, 49, 2, 107, 220, 19)
-# 
-# wM.NP = weightedMedian(x, ux, bootstrap="nonparametric")
-# ##            m         u(m)     Lwr.2.5%    Upr.97.5%
-# ## -257.9500000    0.4500137 -259.1000000 -257.8500000
-# ## -257.9500000    0.4999863 -259.1000000 -257.8500000
-# 
-# wM.P = weightedMedian(x=x, ux=ux, nux=nux, K=100000, bootstrap="parametric")
-# ##            m         u(m)     Lwr.2.5%    Upr.97.5%
-# ## -257.9500000    0.2415312 -258.8043333 -257.6754742
-# ## -257.9500000    0.2424106 -258.8018402 -257.6748316
-# 
-# wM = weightedMedian(x=x, ux=ux, nux=nux)
-# ##            m         u(m)     Lwr.2.5%    Upr.97.5%
-# ## -257.9500000    0.2371064 -258.8066491 -257.6760749
-# ## -257.9500000    0.2406318 -258.7909657 -257.6754067
-# 
-# plot(density(wM$muBOOT), col="Red")
-# lines(density(wM.NP$muBOOT), col="Green")
-# lines(density(wM.P$muBOOT), col="Blue")
 
-######################################################################
-## ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ##
-######################################################################
 
     

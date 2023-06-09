@@ -178,20 +178,40 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     D_trade = sweep(DC_trade, 2, -DoE.x)
   }                 ############################This is the end of the LOO if/else
   
-  DoE.Lwr.Pred = apply(D_pred, 2, function (x) {quantile(x, probs=(1-coverageProb)/2)})
-  DoE.Upr.Pred = apply(D_pred, 2, function (x) {quantile(x, probs=(1+coverageProb)/2)})
   
-  DoE.Lwr.Trade = apply(D_trade, 2, function (x) {quantile(x, probs=(1-coverageProb)/2)})
-  DoE.Upr.Trade = apply(D_trade, 2, function (x) {quantile(x, probs=(1+coverageProb)/2)})
   
   DoE.U.Pred = rep(NA,nI)
   DoE.U.Trade = rep(NA,nI)
   
+  DoE.Lwr.Pred = rep(NA,nI)
+  DoE.Upr.Pred = rep(NA,nI)
+  
+  DoE.Lwr.Trade = rep(NA,nI)
+  DoE.Upr.Trade = rep(NA,nI)
+  
+  hw_vec_pred = rep(NA,nI)
+  hw_vec_trade = rep(NA,nI)
+  
   for (j in 1:nI) {
-    DoE.U.Pred[j] = symmetricalBootstrapCI(D_pred[,j], DoE.x[j], coverageProb) 
-    DoE.U.Trade[j] = symmetricalBootstrapCI(D_trade[,j], DoE.x[j], coverageProb) 
+    
+    hw_vec_pred[j] = symmetricalBootstrapCI(D_pred[,j], DoE.x[j], coverageProb) 
+    hw_vec_trade[j] = symmetricalBootstrapCI(D_trade[,j], DoE.x[j], coverageProb)
+    
+    # expanded uncertainties
+    DoE.Lwr.Pred[j] = DoE.x[j] - hw_vec_pred[j]
+    DoE.Upr.Pred[j] = DoE.x[j] + hw_vec_pred[j]
+    
+    DoE.Lwr.Trade[j] = DoE.x[j] - hw_vec_trade[j]
+    DoE.Upr.Trade[j] = DoE.x[j] + hw_vec_trade[j]
+    
+    # standard uncertainties
+    DoE.U.Pred[j] = sd(D_pred[,j])
+    DoE.U.Trade[j] = sd(D_trade[,j])
+    
   }
   
+  DoE.U95.Pred = hw_vec_pred
+  DoE.U95.Trade = hw_vec_trade
   
   
   ### Analysis for excluded labs
@@ -213,12 +233,15 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     
     for(j in 1:(n.All-nI)){
       if (LOO) {
-        DoE.U.excluded.pred[j]=1.96*sqrt(u.excluded[j]^2 + var(mujB) + DLRes$tau2) ### AP CHECK: is mujB right here?
-        DoE.U.excluded.trade[j]=1.96*sqrt(u.excluded[j]^2 + var(mujB))
+        DoE.U.excluded.pred[j]=sqrt(u.excluded[j]^2 + var(mujB) + DLRes$tau2) ### AP CHECK: is mujB right here?
+        DoE.U.excluded.trade[j]=sqrt(u.excluded[j]^2 + var(mujB))
+        
       }else{
-        DoE.U.excluded.pred[j]=1.96*sqrt(u.excluded[j]^2 + var(muB) + DLRes$tau2) 
-        DoE.U.excluded.trade[j]=1.96*sqrt(u.excluded[j]^2 + var(muB)) 
+        # muB is bootstrapped mu's 
+        DoE.U.excluded.pred[j]=sqrt(u.excluded[j]^2 + var(muB) + DLRes$tau2) 
+        DoE.U.excluded.trade[j]=sqrt(u.excluded[j]^2 + var(muB)) 
       }
+      
       D.excluded.pred[,j]=rnorm(K, mean=DoE.x.excluded[j], sd=sqrt(u.excluded[j]^2 + DLRes$tau2))
       D.excluded.trade[,j]=rnorm(K, mean=DoE.x.excluded[j], sd=sqrt(u.excluded[j]^2))
     }  
@@ -229,19 +252,22 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     
     DoE.x=c(DoE.x,DoE.x.excluded)
     
-    DoE.U.Pred=c(DoE.U.Pred,DoE.U.excluded.pred)
-    DoE.U.Trade=c(DoE.U.Trade,DoE.U.excluded.trade)
+    DoE.U.Pred = c(DoE.U.Pred,DoE.U.excluded.pred)
+    DoE.U.Trade = c(DoE.U.Trade,DoE.U.excluded.trade)
     
-    DoE.Lwr.Pred=c(DoE.Lwr.Pred,DoE.x.excluded-DoE.U.excluded.pred) 
-    DoE.Upr.Pred=c(DoE.Upr.Pred,DoE.x.excluded+DoE.U.excluded.pred)
+    DoE.U95.Pred = c(DoE.U95.Pred,1.96*DoE.U.excluded.pred)
+    DoE.U95.Trade = c(DoE.U95.Trade,1.96*DoE.U.excluded.trade)
     
-    DoE.Lwr.Trade=c(DoE.Lwr.Trade,DoE.x.excluded-DoE.U.excluded.trade) 
-    DoE.Upr.Trade=c(DoE.Upr.Trade,DoE.x.excluded+DoE.U.excluded.trade)
+    DoE.Lwr.Pred = c(DoE.Lwr.Pred,DoE.x.excluded-1.96*DoE.U.excluded.pred) 
+    DoE.Upr.Pred = c(DoE.Upr.Pred,DoE.x.excluded+1.96*DoE.U.excluded.pred)
     
-    lab.outlabel=c(lab,lab.excluded)
+    DoE.Lwr.Trade = c(DoE.Lwr.Trade,DoE.x.excluded-1.96*DoE.U.excluded.trade) 
+    DoE.Upr.Trade = c(DoE.Upr.Trade,DoE.x.excluded+1.96*DoE.U.excluded.trade)
     
-    D_pred =cbind(D_pred,D.excluded.pred)
-    D_trade =cbind(D_trade,D.excluded.trade)
+    lab.outlabel = c(lab,lab.excluded)
+    
+    D_pred = cbind(D_pred,D.excluded.pred)
+    D_trade = cbind(D_trade,D.excluded.trade)
     
   }else{
     lab.outlabel=lab.All
@@ -251,8 +277,10 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
   ### Add results for excluded labs 
   results = data.frame(Lab=lab.outlabel, 
                        DoE.x=DoE.x, 
-                       DoE.U95.Pred=DoE.U.Pred,
-                       DoE.U95.Trade=DoE.U.Trade,
+                       DoE.U95.Pred=DoE.U95.Pred,
+                       DoE.U95.Trade=DoE.U95.Trade,
+                       DoE.U.Pred=DoE.U.Pred,
+                       DoE.U.Trade=DoE.U.Trade,
                        DoE.Lwr.Pred=DoE.Lwr.Pred, 
                        DoE.Lwr.Trade=DoE.Lwr.Trade, 
                        DoE.Upr.Pred=DoE.Upr.Pred,

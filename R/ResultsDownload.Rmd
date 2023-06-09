@@ -33,14 +33,14 @@ knitr::kable(
 
 cat(paste('Date:', Sys.Date(),'  \n'))
 if(doe_type == '1') {
-  doe_name = 'Prediction'
+  doe_name = 'Recognizing Dark Uncertainty'
   
 } else if(doe_type == '2') {
-  doe_name = "Trade"
+  doe_name = "Ignoring Dark Uncertainty"
 }
 
 cat(paste("Version Number:",version,'  \n'))
-cat(paste("Type of DoE: Degrees of Equivalence for ",doe_name, '  \n'))
+cat(paste("Type of DoE: Degrees of Equivalence ",doe_name, '  \n'))
 cat(paste('Selected Procedure:', the_proc,'  \n'))
 
   # DSL

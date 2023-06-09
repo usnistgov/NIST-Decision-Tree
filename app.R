@@ -9,22 +9,22 @@ library(rhandsontable)
 library(tinytex)
 library(metafor)
 library(rmutil)
+library(shinycssloaders)
 # also need boot, extraDistr, rmarkdown, knitr
 
+source('./shiny_modules/inputAndDTmodule.R')
+source('./shiny_modules/resultsModule.R')
+source('./shiny_modules/aboutModule.R')
 
 source('./R/utils.R')
-source('./R/inputAndDTmodule.R')
-source('./R/resultsModule.R')
 source('./R/weightedMedian.R')
-source('./R/CochranDerSimonianLaird-2022May24.R')
+source('./R/CochranDerSimonianLaird.R')
+source('./R/DoEUnilateralDL.R')
+source('./R/sampleFromTau2Dist.R')
+source('./R/symmetricalBootstrapCI.R')
+source('./R/KCplotDoEplot_6_22.R')
 
-
-source('./R/DOE/DoEUnilateralDL.R')
-source('./R/DOE/sampleFromTau2Dist.R')
-source('./R/DOE/symmetricalBootstrapCI.R')
-source('./R/DOE/KCplotDoEplot_6_22.R')
-
-version = "1.0.0"
+version = "1.0.1"
 
 
 ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
