@@ -45,10 +45,10 @@ KCplot = function (val, unc, lab=NULL,
     ## VALUE -- NULL
     ## OUTPUT -- Plot
 
-    require(viridis)
-    colINCLUDE = viridis(n=4)
+    
+    colINCLUDE = viridis::viridis(n=4)
     names(colINCLUDE) = c("val", "tau", "unc", "kcrv.unc")
-    colEXCLUDE = viridis(n=4, option="B")[c(2,3)]
+    colEXCLUDE = viridis::viridis(n=4, option="B")[c(2,3)]
     names(colEXCLUDE) = c("val", "unc")
     if (is.null(lab)) {lab = LETTERS[1:length(val)]} 
     lab = as.character(lab)
@@ -138,10 +138,9 @@ KCplot = function (val, unc, lab=NULL,
 DoEplot = function (DoE, title=NULL, title.position="left", title.line=0,
                     ylab=NULL, ylim=NULL, exclude=NULL)
 {
-    require(viridis)
-    colINCLUDE = viridis(n=5)[c(3,2)]
+    colINCLUDE = viridis::viridis(n=5)[c(3,2)]
     names(colINCLUDE) = c("val", "unc")
-    colEXCLUDE = viridis(n=4, option="B")[c(2,3)]
+    colEXCLUDE = viridis::viridis(n=4, option="B")[c(2,3)]
     names(colEXCLUDE) = c("val", "unc")
     ## Remove any initial minus sign in the names of the labs
     lab = gsub("^-", "", DoE$Lab)
@@ -192,147 +191,4 @@ DoEplot = function (DoE, title=NULL, title.position="left", title.line=0,
     return(invisible(NULL))
 }
 
-## ## ===================================================================
-## ## EXAMPLE A
-## 
-## z = read.table(header=TRUE, text="
-## lab          x      U       n  k
-## BAM          0.0978 0.0006  6  2
-## IAEA         0.099  0.003   5  2
-## LNE          0.0930 0.0026  6  2
-## NIM          0.0975 0.0015  6  2
-## NIST         0.0966 0.0013 13  2
-## NMIA         0.1000 0.0062  6  2.18
-## NMIJ         0.0963 0.0021  5  2
-## TUBITAK      0.110  0.0025  5  2")
-## z$ux = z$U/z$k
-## z$nu = c(rep(60, 5), 12, rep(60,2)) 
-## 
-## ## HIERARCHICAL LAPLACE+GAUSS
-## ## The consensus estimate is: 0.09758
-## ##    (where 4 significant digits are believed to be reliable)
-## ## The standard uncertainty is: 0.001148
-## ## The credible interval ranges from: 0.09536 to 0.09997
-## ## The dark uncertainty (tau) is: 0.004382
-## 
-## KCplot(val=z$x, unc=z$ux, ylim=c(0.0875, 0.1165),
-##        ref.val=0.0976, ref.unc=0.0016,
-##        kcrv=0.09758, kcrv.unc=0.001148, tau=0.004382,
-##        lab=z$lab, title="CCQM-K49 (Cd)\nLaplace+Gauss",
-##        title.position="left", title.line=-2,
-##        ylab="Mass Fraction / (mg/kg)")
-## 
-## ## Unilateral Degrees of Equivalence
-## DoE.LG = read.table(header=TRUE, as.is=TRUE, text="
-## Lab       DoE.x       DoE.U95   DoE.Lwr     DoE.Upr
-## BAM       0.0002222   0.01029   -0.009809   0.01081
-## IAEA      0.001422    0.01027   -0.008864   0.0117
-## LNE      -0.004578    0.01035   -0.0151     0.005626
-## NIM      -0.00007782  0.01029   -0.01048    0.01014
-## NIST     -0.0009778   0.01018   -0.01102    0.009328
-## NMIA      0.002422    0.01139   -0.008915   0.01387
-## NMIJ     -0.001278    0.01026   -0.0115     0.009021
-## TUBITAK   0.01242     0.01037    0.001855   0.02259")
-## 
-## DoEplot(DoE.LG, title="CCQM-K49 (Cd)\nLaplace+Gauss",
-##         ylim=c(-0.0135, 0.0245),
-##        title.position="left", title.line=-2,
-##        ylab="DoE / (mg/kg)")
 
-## ## ===================================================================
-## ## EXAMPLE B
-## 
-## K155.A.Ni = read.table(header=TRUE, as.is=TRUE, text="
-##      lab     w    uw   nu
-##     FTMC 4.280 0.650  9.0
-##     NIMT 4.320 0.071 60.4
-##     RISE 4.480 0.150 60.4
-##      NRC 4.522 0.022 60.4
-##    KRISS 4.534 0.020  7.9
-##      UME 4.568 0.019 60.4
-##     NMIA 4.580 0.070 40.7
-##     NMIJ 4.620 0.060 60.4
-##    UNIIM 4.700 0.450 60.4
-##      NIM 4.744 0.090 60.4
-## VNIIFTRI 6.670 0.380 60.4")
-## 
-## ## NICOB Hierarchical Bayes (Gaussian)
-## ## The consensus estimate is: 4.547
-## ## The standard uncertainty is: 0.03224
-## ## The 95% credible interval ranges from: 4.481 to 4.614
-## ## The dark uncertainty (tau) is: 0.0615
-## 
-## KCplot(val=K155.A.Ni$w, unc=K155.A.Ni$uw, lab=K155.A.Ni$lab,
-##        title="CCQM-K155-SampleA-Ni", exclude=c("FTMC", "VNIIFTRI"),
-##        title.position="left",
-##        kcrv=4.547, kcrv.unc=0.03224, tau=0.0615,
-##        ylab=expression(italic(w)~~{}/{}~~(plain(mg)/plain(kg))))
-## 
-## ## Unilateral Degrees of Equivalence
-## DoE = read.table(header=TRUE, as.is=TRUE, text="
-## Lab       DoE.x      DoE.U95   DoE.Lwr   DoE.Upr
-## NIMT      -0.2268    0.2213    -0.4511   -0.009
-## RISE      -0.06682   0.3413    -0.4046    0.2771
-## NRC       -0.02482   0.179     -0.2039    0.1539
-## KRISS     -0.01282   0.177     -0.1891    0.1653
-## UME        0.02118   0.1735    -0.1566    0.1901
-## NMIA       0.03318   0.2164    -0.1858    0.2466
-## NMIJ       0.07318   0.2041    -0.1337    0.2747
-## UNIIM      0.1532    0.9124    -0.7448    1.078
-## NIM        0.1972    0.2444    -0.04838   0.4407
-## FTMC      -0.2668    1.286     -1.553     1.019
-## VNIIFTRI   2.123     0.772      1.351     2.895")
-## 
-## DoEplot(DoE, title="CCQM-K155-A-Ni DoEs", title.position="left",
-##         exclude=c("FTMC", "VNIIFTRI"),
-##    ylab=expression(plain(DoE)(plain(Ni))~~{}/{}~~(mu*plain(g)/plain(kg))))
-
-## ## ===================================================================
-## ## EXAMPLE C
-## 
-## PCB28 = data.frame(lab=c("IRMM", "KRISS", "NARL", "NIST", "NMIJ", "NRC"),
-##                    x=c(34.3, 32.9, 34.53, 32.42, 31.9, 35.8),
-##                    u=c(1.03, 0.69, 0.83, 0.29, 0.4, 0.38),
-##                    nu=c(60, 4, 18, 2, 13, 60))
-## 
-## ## NICOB Hierarchical Bayes (Gaussian)
-## ## The consensus estimate is: 33.6
-## ## The standard uncertainty is: 0.798
-## ## The 95% credible interval ranges from: 32 to 35.2
-## ## The dark uncertainty (tau) is: 1.69
-## 
-## fileHOME.PDF = "~/NIST/METROLOGY/MetrologyBasics/PRESENTATION/"
-## fileNAME.PDF = paste0("CCQM-K25-PCB28-MeasurementResults.pdf")
-## pdf(file=paste0(fileHOME.PDF, fileNAME.PDF), width=6, height=3,
-##     pointsize=12, bg="White")
-## par(mar=c(2, 4.5, 1, 0.5))
-## KCplot(val=PCB28$x, unc=PCB28$u, lab=PCB28$lab,
-##        title="CCQM-K25-PCB28", title.position="left",
-##        ylab=expression(italic(w)~~{}/{}~~(plain(ng)/plain(g))))
-## dev.off()
-## 
-## fileHOME.PDF = "~/NIST/METROLOGY/MetrologyBasics/PRESENTATION/"
-## fileNAME.PDF = paste0("CCQM-K25-PCB28-ConsensusValue.pdf")
-## pdf(file=paste0(fileHOME.PDF, fileNAME.PDF), width=6, height=3,
-##     pointsize=12, bg="White")
-## par(mar=c(2, 4.5, 1, 0.5))
-## KCplot(val=PCB28$x, unc=PCB28$u, lab=PCB28$lab,
-##        title="CCQM-K25-PCB28", title.position="left",
-##        kcrv=33.6, kcrv.unc=0.798, tau=1.69,
-##        ylab=expression(italic(w)~~{}/{}~~(plain(ng)/plain(g))))
-## dev.off()
-## 
-## ## Unilateral Degrees of Equivalence
-## DoE = read.table(header=TRUE, as.is=TRUE, text="
-## Lab       DoE.x      DoE.U95   DoE.Lwr   DoE.Upr
-## IRMM	0.685	4.4	-3.75	5.03
-## KRISS	-0.715	4.37	-5.13	3.62
-## NARL	0.915	4.36	-3.45	5.27
-## NIST	-1.19	4.11	-5.33	2.89
-## NMIJ	-1.71	4.03	-5.77	2.32
-## NRC	2.19	4.09	-1.89	6.28")
-## 
-## DoEplot(DoE, title="CCQM-K25-PCB28 DoEs", title.position="left",
-##    ylab=expression(plain(DoE)~~{}/{}~~(plain(ng)/plain(g))))
-
-## ===================================================================

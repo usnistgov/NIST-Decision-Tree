@@ -11,24 +11,34 @@ resultsUI <- function(id) {
     br(),
     hr(),
     br(),
-    shinycssloaders::withSpinner(uiOutput(ns('model_text_output'))),
+    uiOutput(ns('model_text_output')),
     br(),
-    shinycssloaders::withSpinner(uiOutput(ns('download_button_ui'))),
+    uiOutput(ns('download_button_ui')),
     br(),
     uiOutput(ns('doe_type_radio_buttons')),
     br(),
     fluidRow(
-      column(6,shinycssloaders::withSpinner(plotOutput(ns('model_plot_v2')))),
-      column(6,shinycssloaders::withSpinner(plotOutput(ns('doe_plot'))))
+      column(6,plotOutput(ns('model_plot_v2'))),
+      column(6,plotOutput(ns('doe_plot')))
     ),
     br(),
-    h4("Unilateral Degrees of Equivalence Table"),
+    h3("Unilateral Degrees of Equivalence Table"),
     br(),
-    shinycssloaders::withSpinner(DT::dataTableOutput(ns('doe_table'),width='60%')),
+    DT::dataTableOutput(ns('doe_table'),width='60%'),
     br(),
+    h3("Table of Uncertainties for Each Lab"),
+    DT::dataTableOutput(ns('results_table_out'),width='100%'),
     br(),
-    shinycssloaders::withSpinner(uiOutput(ns('jags_diagnostics_header'))),
-    shinycssloaders::withSpinner(DT::dataTableOutput(ns('diagnostic_table'),width='50%')),
+    uiOutput(ns('download_table_button_ui')),
+    br(),
+    uiOutput(ns('table_heading')),
+    fluidRow(
+      column(6,uiOutput(ns("table_explanation_left"))),
+      column(6,uiOutput(ns("table_explanation_right")))
+    ),
+    br(),
+    uiOutput(ns('jags_diagnostics_header')),
+    DT::dataTableOutput(ns('diagnostic_table'),width='50%'),
     br()
     
   )
@@ -116,6 +126,44 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
                          As a general recommendation, if any of the R-hat values are greater than 1.05, then the sampler may not have reached equilibrium, and the 'Total Number of MCMC Steps' should be increased, and the run repeated. 
                          The 'Number of MCMC Warm-Up Steps' should be about half of the 'Total Number of MCMC Steps.' The 'Effective Sample Size' (n.eff) is approximately the size of the MCMC sample that the results are based on.")))
       
+        
+      })
+      
+      output$table_heading = renderUI({
+        
+        if(is.null(res())) {
+          return(NULL)
+        }
+        
+        h4("Column Name Descriptions",align="center")
+        
+      })
+      
+      output$table_explanation_left = renderUI({
+        
+        if(is.null(res())) {
+          return(NULL)
+        }
+        
+        return(tagList(
+          p(
+            get_table_descriptions_left()
+          )
+        ))
+        
+      })
+      
+      output$table_explanation_right = renderUI({
+        
+        if(is.null(res())) {
+          return(NULL)
+        }
+        
+        return(tagList(
+          p(
+            get_table_descriptions_right()
+          )
+        ))
         
       })
       
@@ -324,15 +372,19 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
           alpha_prior_scale = input$alpha_prior_scale
         )
         
+        withProgress({
+          
         
-        res = run_ndt_method(x=x,
-                             u=u,
-                             dof=dof,
-                             the_proc = the_proc,
-                             num_bootstrap = num_bootstrap,
-                             jags_params = jags_params,
-                             seed = seed,
-                             priors = priors)
+          res = run_ndt_method(x=x,
+                               u=u,
+                               dof=dof,
+                               the_proc = the_proc,
+                               num_bootstrap = num_bootstrap,
+                               jags_params = jags_params,
+                               seed = seed,
+                               priors = priors)
+        
+        },value = 1,message="Running selected procedure...")
         
         return(res)
 
@@ -418,19 +470,65 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
         
       })
       
-      # degrees of equivalence
-      doe_res = eventReactive(input$run_method, {
+      results_table = eventReactive(res(), {
+        
+        if(is.null(res())) {
+          return(NULL)
+        }
         
         vars_in = vars_in()
         the_proc = isolate(selected_procedure())
         res = res()
         num_bootstrap = input$num_bootstrap
         
+        doe_table = compute_doe_table(the_proc=the_proc,
+                                      vars_in=vars_in,
+                                      res=res,
+                                      num_bootstrap=num_bootstrap)$DoE
         
-        out = compute_doe_table(the_proc=the_proc,
-                                vars_in=vars_in,
-                                res=res,
-                                num_bootstrap=num_bootstrap)
+        out_table = summary_table(ndt_res=res,
+                                  vars_in=vars_in,
+                                  doe_table=doe_table)
+        
+        out_table[,2:ncol(out_table)] = round(out_table[,2:ncol(out_table)],input$nsd)
+        
+        return(out_table)
+        
+        
+      })
+      
+      observeEvent(results_table, {
+        
+        output$results_table_out = DT::renderDataTable({
+          
+          if(is.null(results_table())) {
+            return(NULL)
+          }
+          
+          return(results_table())
+          
+          
+        },options=list(searching=FALSE,paging=FALSE))
+        
+      })
+      
+      # degrees of equivalence
+      doe_res = eventReactive(res(), {
+        
+        vars_in = vars_in()
+        the_proc = isolate(selected_procedure())
+        res = res()
+        num_bootstrap = input$num_bootstrap
+        
+        withProgress({
+          
+          out = compute_doe_table(the_proc=the_proc,
+                                  vars_in=vars_in,
+                                  res=res,
+                                  num_bootstrap=num_bootstrap)
+          
+        },value=1,message="Computing DoEs...")
+
         
         return(out)
         
@@ -521,20 +619,11 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
           vars_in = vars_in()
           doe_type = input$doe_type
           
-          if(doe_type == "1") {
-            doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
-            doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
-            doe_data$DoE.U95 = doe_data$DoE.U95.Pred
-            doe_plot_title = 'Unilateral Degrees of Equivalence (Recognizing Dark Uncertainty)'
-            
-          } else if(doe_type == "2") {
-            doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
-            doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
-            doe_data$DoE.U95 = doe_data$DoE.U95.Trade
-            doe_plot_title = 'Unilateral Degrees of Equivalence (Ignoring Dark Uncertainty)'
-          }
+          cdt_res = condense_doe_table(doe_data,doe_type)
+          doe_table = cdt_res$doe_data
+          doe_plot_title = cdt_res$doe_plot_title
           
-          return(DoEplot(doe_data,
+          return(DoEplot(doe_table,
                          doe_plot_title,
                          exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute]))
           
@@ -553,6 +642,17 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
         downloadButton(session$ns('download_all'),'Download Report (PDF File)')
       })
       
+      output$download_table_button_ui <- renderUI({
+        
+        res = results_table()
+        
+        if(is.null(res)) {
+          return(NULL)
+        }
+        
+        downloadButton(session$ns('download_results_table'),'Download Lab Uncertainties Table (.csv File)')
+      })
+      
       output$download_all <- downloadHandler(
         filename = function() {
           paste("ResultsDownload.pdf")
@@ -567,6 +667,7 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
           doe_res = doe_res()
           doe_type = input$doe_type
           diagnostics = res$diagnostics
+          results_table = results_table()
           
           if(grepl('recommend',the_proc,ignore.case = T)) {
             the_proc = strsplit(the_proc,'\\(')[[1]][1]
@@ -581,10 +682,25 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
                                             nsd = nsd,
                                             doe_type = doe_type,
                                             diagnostics = diagnostics,
-                                            version = version))
+                                            version = version,
+                                            results_table = results_table))
           })
           
           file.copy('./R/ResultsDownload.pdf',file)
+          
+        }
+      )
+      
+      output$download_results_table <- downloadHandler(
+        filename = function() {
+          paste("Lab-Uncertainties-Table.csv")
+        },
+        
+        content = function(file) {
+          
+          results_table = results_table()
+          
+          write.csv(x=results_table,file=file,row.names=F)
           
         }
       )

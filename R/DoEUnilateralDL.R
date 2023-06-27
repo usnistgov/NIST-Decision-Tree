@@ -34,7 +34,6 @@
 
 DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, DLRes, exclude)
 {
-  require(metafor)
   testWarn = ""
   
   n.All = length(x.All)
@@ -44,6 +43,9 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
   # Check if any lab was exempt from prior computation
   #sanitize = !startsWith( lab.All,"-")
   sanitize = !exclude
+  
+  nu.All[is.na(nu.All)] = 100000
+  nu.All[is.null(nu.All)] = 100000
   
   ## Analysis for included labs 
   x=x.All[sanitize]
@@ -107,7 +109,7 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
       ## AP-AK: The same sample of size K in tau2B
       ## is used for all j=1,...,n
       sigmaj = sqrt(tau2B + u[j]^2)
-      if (is.null(nu[j]) || (nu[j]==Inf)) {
+      if (is.null(nu[j]) || (nu[j] > 10000)) {
         ej = rnorm(K, mean=0, sd=sigmaj)
       } else {
         ## AP-AK: Addressing possibility of no
@@ -134,7 +136,7 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     z = DLRes
     mu = z$b
     
-    indexInf = (nu == Inf)
+    indexInf = (nu > 10000)
     ## Column j of D will have a sample from the
     ## bootstrap distribution of x[j]-mu
     D_pred = array(dim=c(K,nI))
@@ -150,6 +152,7 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
       xB_trade = rnorm(nI, mean=mu, sd=sqrt(u^2))
       
       uB = rep(NA, nI)
+      
       if (is.null(nu)) {
         uB = u
         
@@ -158,8 +161,8 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
         uB[!indexInf] = u[!indexInf]*sqrt(nu[!indexInf]/rchisq(sum(!indexInf), df=nu[!indexInf]))
       }
       
-      muB[k] = rma(yi=xB_pred, sei=uB, method="DL",
-                   knha=FALSE)$b
+      muB[k] = metafor::rma(yi=xB_pred, sei=uB, method="DL",
+                            knha=FALSE)$b
       
       
       D_pred[k,] = xB_pred - as.vector(muB[k])

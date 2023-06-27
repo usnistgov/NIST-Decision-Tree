@@ -10,6 +10,7 @@ params:
   doe_type: NA
   diagnostics: NA
   version: NA
+  results_table: NA
 
 ---
 
@@ -177,6 +178,19 @@ DoEplot(outdf,
 
 knitr::kable(
   outdf
+)
+```
+
+## Lab Uncertainties Table
+
+```{r}
+
+knitr::kable(
+  results_table[,1:5]
+)
+
+knitr::kable(
+  results_table[,c(1,6:ncol(results_table))]
 )
 ```
 

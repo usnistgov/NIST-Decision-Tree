@@ -1,70 +1,44 @@
-library(symmetry)
-library(ggplot2)
-library(R2jags)
-library(rhandsontable)
-library(metafor)
-library(rmutil)
-library(shinycssloaders)
-# also need boot, extraDistr, rmarkdown, knitr
+library(decisiontree)
 
-setwd("~/ByScientist/AntonioPossolo/CODES/CODES/decisiontree/")
-
-source('R/utils.R')
-source('R/weightedMedian.R')
-source('R/CochranDerSimonianLaird.R')
-source('R/DoEUnilateralDL.R')
-source('R/sampleFromTau2Dist.R')
-source('R/symmetricalBootstrapCI.R')
-source('R/KCplotDoEplot_6_22.R')
+set.seed(123)
 
 dataset = read.csv('example_dataset.csv')
 
-methods_to_run = c("Recommended",
-                   "AWA",
-                   "WM",
-                   "HGG",
-                   "HLG",
-                   "HSSG")
+# test all methods
+methods_to_run = c("AWA","WM","HGG","HLG","HSSG")
 
-methods_to_run = 'AWA'
+# test a variety of exclusions
+excludes = matrix( FALSE, ncol=nrow(dataset), nrow=5)
+excludes[2,1] = TRUE
+excludes[3,nrow(dataset)] = TRUE
+excludes[4,c(1,nrow(dataset))] = TRUE
+excludes[5,3] = TRUE
 
 for(ii in 1:length(methods_to_run)) {
   
-  res = run_full_ndt(dataset = dataset,
-                     exclude = rep(FALSE,length(dataset$MeasuredValues)),
-                     procedure = methods_to_run[ii], 
-                     num_bootstrap = 1000,
-                     seed = 123,
-                     n_iter = 50000,
-                     burn_in = 25000,
-                     thin = 10)
-  
-  res = run_full_ndt(dataset = dataset,
-                     exclude = c(TRUE,rep(FALSE,length(dataset$MeasuredValues)-1)),
-                     procedure = methods_to_run[ii], 
-                     num_bootstrap = 1000,
-                     seed = 123,
-                     n_iter = 50000,
-                     burn_in = 25000,
-                     thin = 10)
-  
-  
-  res = run_full_ndt(dataset = dataset,
-                     exclude = c(rep(FALSE,length(dataset$MeasuredValues)-1),TRUE),
-                     procedure = methods_to_run[ii], 
-                     num_bootstrap = 1000,
-                     seed = 123,
-                     n_iter = 50000,
-                     burn_in = 25000,
-                     thin = 10)
+  for(jj in 1:nrow(excludes)) {
+    
+    dataset$DegreesOfFreedom = sample(c(NA,dataset$DegreesOfFreedom),replace=TRUE,size=nrow(dataset))
+    
+    res = run_full_ndt(dataset = dataset,
+                       exclude = excludes[jj,],
+                       procedure = methods_to_run[ii], 
+                       num_bootstrap = 1000,
+                       seed = 123,
+                       n_iter = 25000,
+                       burn_in = 12500,
+                       thin = 10)
+    
+    summary_table(res)
+    doe_plot(res)
+    get_doe_table(res)
+    get_MCMC_diagnostics(res)
+    get_KCplot(res)
+    get_MCMC_diagnostics(res)
+    
+  }
   
 }
-
-
-
-
-
-
 
 
 

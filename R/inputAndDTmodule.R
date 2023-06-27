@@ -1,3 +1,10 @@
+#' @import ggplot2
+#' @importFrom magrittr "%>%"
+
+#' @export
+#' @importFrom symmetry MGG
+symmetry::MGG
+
 inputUI <- function(id) {
   
   ns <- NS(id)
@@ -23,7 +30,7 @@ inputUI <- function(id) {
     fluidRow(column(1,actionButton(ns('validate'),"Validate Data"))),
     fluidRow(column(4,uiOutput(ns('validate_msg')))),
     br(),
-    fluidRow(column(7,br(),br(),br(),br(),rHandsontableOutput(ns("hot")),offset=.5),
+    fluidRow(column(7,br(),br(),br(),br(),rhandsontable::rHandsontableOutput(ns("hot")),offset=.5),
              column(5,plotOutput(ns('raw_data_plot')))),
     br(),
     hr(),
@@ -75,7 +82,7 @@ input_server <- function(id) {
       },ignoreNULL = FALSE)
       
       
-      output$hot <- renderRHandsontable({
+      output$hot <- rhandsontable::renderRHandsontable({
         
         #cat('here \n')
         
@@ -126,13 +133,13 @@ input_server <- function(id) {
         myindex = which(DF[,1]==F)-1
         
         
-        rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE,digits=num_dec) %>%
-          hot_context_menu(allowColEdit = FALSE) %>%
+        rhandsontable::rhandsontable(DF, readOnly = FALSE, selectCallback = TRUE,digits=num_dec) %>%
+          rhandsontable::hot_context_menu(allowColEdit = FALSE) %>%
           #hot_validate_numeric(cols=3:4) %>%
-          hot_col(2, format = '', halign = 'htCenter', valign = 'htTop') %>%
-          hot_col(1, halign = 'htCenter') %>%
-          hot_col(c(3,4), format=digits_pattern,halign = 'htCenter') %>%
-          hot_col(5, type = 'numeric', format = '0',halign = 'htCenter') %>%
+          rhandsontable::hot_col(2, format = '', halign = 'htCenter', valign = 'htTop') %>%
+          rhandsontable::hot_col(1, halign = 'htCenter') %>%
+          rhandsontable::hot_col(c(3,4), format=digits_pattern,halign = 'htCenter') %>%
+          rhandsontable::hot_col(5, type = 'numeric', format = '0',halign = 'htCenter') %>%
           #hot_col(c(3,4), format = paste0("0.", paste0(rep(0, 5), collapse='')), halign = 'htCenter') %>%
         #   hot_col(c(2,3,4,5), renderer = "function(instance, td, row, col, prop, value, cellProperties) {
         #     Handsontable.renderers.TextRenderer.apply(this, arguments);
@@ -144,15 +151,15 @@ input_server <- function(id) {
         #   else {td.style.background = 'darkseagreen';  }
         # }
         # ") %>%
-          hot_col(1, type = 'checkbox') %>% 
-          hot_cols(manualColumnResize = TRUE,
+          rhandsontable::hot_col(1, type = 'checkbox') %>% 
+          rhandsontable::hot_cols(manualColumnResize = TRUE,
                    colWidths = c(75,100,130,130,150))
         
       })
       
       output$raw_data_plot <- renderPlot({
         
-        data = hot_to_r(input$hot)
+        data = rhandsontable::hot_to_r(input$hot)
         
         validated(0)
         
@@ -185,7 +192,7 @@ input_server <- function(id) {
       # format input variables
       init <- eventReactive(input$validate, {
 
-        the_data = hot_to_r(input$hot)
+        the_data = rhandsontable::hot_to_r(input$hot)
         colnames(the_data) = c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
         
         which_to_compute = as.logical(the_data$Include)

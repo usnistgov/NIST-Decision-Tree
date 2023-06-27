@@ -1,3 +1,7 @@
+#' @import ggplot2
+#' @importFrom magrittr "%>%"
+#' @importFrom symmetry MGG
+
 select_test = function(chosen_test,rvs) {
   # changes all reactive values to 0 except for the selected proceudure
   # e.g. select_test('hgg', <reactive values>)
@@ -95,7 +99,7 @@ bootDL = function(K,thedat,themle){
       } #simulate new uncertainties
     
     
-    muB[k] = rma(yi=xB, sei=uB, method="DL")$beta ### don't need modified version, only outputting b
+    muB[k] = metafor::rma(yi=xB, sei=uB, method="DL")$beta ### don't need modified version, only outputting b
   }
   
   return(muB)
@@ -221,9 +225,6 @@ run_ndt_method = function(x,
                         themle=list(mu=DLres$beta))
     
     
-    
-    
-    
     res$se_dslbs = sd(bootDL_res)
     hw_dslbs = symmetricalBootstrapCI(bootDL_res,as.numeric(DLres$beta),.95)
     res$mu_upper_dslbs = DLres$beta + hw_dslbs
@@ -286,15 +287,9 @@ run_ndt_method = function(x,
       stan_filename = 'R/Stan/hssg.stan'
       jags_filename = 'R/Jags/hssg2.txt'
     }
-    
-    
-    loaded_packages = .packages()
-    
-    if('rstan' %in% loaded_packages) {
-      mcmc_sampler = 'stan'
-    } else{
-      mcmc_sampler = 'jags'
-    }
+
+    mcmc_sampler = 'jags'
+
     
     model_inits = function() {
       list(mu = mean(x),
@@ -348,19 +343,19 @@ run_ndt_method = function(x,
       res$mu_upper = quantile(stan_out$mu,.975)
       res$mu_lower = quantile(stan_out$mu,.025)
       res$se = sd(stan_out$mu)
-      res$tau = mean(stan_out$tau)
+      res$tau = median(stan_out$tau)
       
     } else if(mcmc_sampler == 'jags') {
       
       
-      jags_out = jags(data = model_data,
-                      inits = model_inits,
-                      model.file=jags_filename,
-                      parameters.to.save = parameters_to_save,
-                      n.chains = 4,
-                      n.iter = jags_params$n_iter,
-                      n.burnin = jags_params$burn_in,
-                      n.thin = jags_params$thin)
+      jags_out = R2jags::jags(data = model_data,
+                              inits = model_inits,
+                              model.file=jags_filename,
+                              parameters.to.save = parameters_to_save,
+                              n.chains = 4,
+                              n.iter = jags_params$n_iter,
+                              n.burnin = jags_params$burn_in,
+                              n.thin = jags_params$thin)
 
       
       p_samples = jags_out$BUGSoutput$sims.list
@@ -370,7 +365,7 @@ run_ndt_method = function(x,
       res$mu_upper = res$mu + hw
       res$mu_lower = res$mu - hw
       res$se = sd(p_samples$mu)
-      res$tau = mean(p_samples$tau)
+      res$tau = median(p_samples$tau)
       res$tau_lower = quantile(p_samples$tau,.025)
       res$tau_upper = quantile(p_samples$tau,.975)
       res$p_samples = p_samples
@@ -548,6 +543,25 @@ compute_doe_table = function(the_proc,
   
 }
 
+condense_doe_table = function(doe_data,doe_type="1") {
+  
+  if(doe_type == "1") {
+    doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
+    doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
+    doe_data$DoE.U95 = doe_data$DoE.U95.Pred
+    doe_plot_title = 'Unilateral Degrees of Equivalence (Recognizing Dark Uncertainty)'
+    
+  } else if(doe_type == "2") {
+    doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
+    doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
+    doe_data$DoE.U95 = doe_data$DoE.U95.Trade
+    doe_plot_title = 'Unilateral Degrees of Equivalence (Ignoring Dark Uncertainty)'
+  }
+  
+  return(list(doe_data = doe_data, doe_plot_title = doe_plot_title))
+
+}
+
 # David's function
 get_DT_decision <- function(x,u,
                             sizeHetero=0.10, sizeGauss=0.05, sizeSym=0.05) {
@@ -580,6 +594,7 @@ get_DT_decision <- function(x,u,
   normality = ifelse(pval < sizeGauss, FALSE, TRUE)
   
   ### 3: symmetry
+  MGG = symmetry::MGG
   res = symmetry::symmetry_test(x,stat='MGG',bootstrap=TRUE, B=5000) 
   pval = res$p.value
   symmetry = ifelse(pval < sizeSym, FALSE, TRUE)
@@ -811,12 +826,6 @@ get_prior_default = function(x,u,which_param) {
   
 }
 
-get_sigma_prior_default = function(u) {
-  
-  
-  
-}
-
 get_jags_default_priors = function(acronym,x,u) {
   
   if(acronym %in% c('AWA','WM')) {
@@ -857,7 +866,22 @@ get_mcmc_params = function(n_iter = 25000,
   
 }
 
-
+#' Run the full NDT procedure
+#' 
+#' Runs the full NIST Decision Tree Procedure
+#' and outputs the results as a list. The output can be inspected
+#' directly and also used to generate tables and plots, e.g., get_KCplot()
+#' 
+#' @param dataset An R data.frame with columns titled "Laboratory", "MeasuredValues", "StdUnc", and "DegreesOfFreedom"
+#' @param exclude A boolean vector of which labs to exclude from the KCRV computation.
+#' @param procedure Which procedure to run. E.g., "Recommended", "AWA","WM", "HGG", etc.
+#' @param num_bootstrap The number of bootstrap iterations, for the AWA and WM procedures.
+#' @param seed The random seed used for all simulations and mcmc.
+#' @param n_iter The total number of MCMC iterations.
+#' @param burn_in The number of burn-in MCMC iterations.
+#' @param thin The thinning rate for the MCMC iterations.
+#' @return A list of objects containing results pertaining to the analysis.
+#' @export
 run_full_ndt = function(dataset,
                         exclude,
                         procedure = "Recommended", 
@@ -871,6 +895,10 @@ run_full_ndt = function(dataset,
   
   dataset = dataset[,c('Include','Laboratory','MeasuredValues','StdUnc','DegreesOfFreedom')]
   colnames(dataset) = c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
+  
+  # fill in blank dof
+  nodofs = is.na(dataset$DegreesOfFreedom) | is.null(dataset$DegreesOfFreedom)
+  dataset$DegreesOfFreedom[nodofs] = 10**5
   
   
   vars_in = list(measured_vals=dataset$Result[!exclude],
@@ -913,18 +941,167 @@ run_full_ndt = function(dataset,
                                     res = ndt_res,
                                     num_bootstrap = num_bootstrap)
   
-  KCplot(val=vars_in$the_data$Result, 
-         unc=vars_in$the_data$Uncertainty, 
-         tau=ndt_res$tau,
-         kcrv=ndt_res$mu, 
-         kcrv.unc=ndt_res$se,
-         lab=vars_in$the_data$Laboratory, 
-         title=paste("KCRV Estimation:",the_proc), 
-         title.position="left",
-         ylab=NULL, 
-         exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
-  
   print("All analysis completed.")
   
-  return(list(ndt_res = ndt_res, doe_table_res = doe_table_res))
+  return(list(ndt_res = ndt_res, doe_table_res = doe_table_res,
+              vars_in = vars_in))
+}
+
+#' Create KCRV and Lab Uncertainty Plot
+#' 
+#' Creates a plot of the KCRV estimate and uncertainty, along with labs
+#' and their uncertainties.
+#' 
+#' @param ndt_full_res The output of running run_full_ndt()
+#' @export
+get_KCplot = function(ndt_full_res) {
+  
+  ndt_res = ndt_full_res$ndt_res
+  doe_table_res = ndt_full_res$doe_table_res
+  vars_in = ndt_full_res$vars_in
+  the_proc = ndt_res$method
+  
+  print(
+    KCplot(val=vars_in$the_data$Result, 
+           unc=vars_in$the_data$Uncertainty, 
+           tau=ndt_res$tau,
+           kcrv=ndt_res$mu, 
+           kcrv.unc=ndt_res$se,
+           lab=vars_in$the_data$Laboratory, 
+           title=paste("KCRV Estimation:",the_proc), 
+           title.position="left",
+           ylab=NULL, 
+           exclude=vars_in$the_data$Laboratory[!vars_in$which_to_compute])
+  )
+  
+}
+
+#' MCMC Diagnostics
+#' 
+#' If applicable, prints n_eff and Rhat from the MCMC sampler.
+#' 
+#' @param ndt_full_res The output of running run_full_ndt()
+#' @export
+get_MCMC_diagnostics = function(ndt_full_res) {
+  
+  return(ndt_full_res$ndt_res$diagnostics)
+  
+}
+
+#' DoE Table
+#' 
+#' Returns the DoE Table
+#' 
+#' @param ndt_full_res The output of running run_full_ndt()
+#' @param doe_type Whether to include (doe_type="1") or ignore (doe_type="2") the
+#' contribution of dark uncertainty.
+#' @export
+get_doe_table = function(ndt_full_res,doe_type="1") {
+  
+  doe_table = ndt_full_res$doe_table_res$DoE
+  
+  doe_table = condense_doe_table(doe_table,doe_type)
+  
+  return(doe_table$doe_data)
+  
+}
+
+#' DoE Plot
+#' 
+#' Outputs DoE plot.
+#' 
+#' @param ndt_full_res The output of running run_full_ndt()
+#' @param doe_type Whether to include (doe_type="1") or ignore (doe_type="2") the
+#' contribution of dark uncertainty.
+#' @export
+doe_plot = function(ndt_full_res,doe_type="1") {
+  
+  doe_table = get_doe_table(ndt_full_res,doe_type=doe_type)
+  
+  DoEplot(doe_table)
+  
+}
+
+#' Lab Uncertainties Table
+#' 
+#' Returns a dataframe of uncertainties associated with each lab,
+#' for both the lab means and DoE. Uncertainties are returned for 
+#' cases where dark uncertainty is both included and ignored.
+#' @param ndt_full_res The output of running run_full_ndt()
+#' @param ndt_res Used only for the NDT Shiny app. Leave as NULL for use from
+#' within R.
+#' @param vars_in Used only for the NDT Shiny app. Leave as NULL for use from
+#' within R.
+#' @param doe_table Used only for the NDT Shiny app. Leave as NULL for use from
+#' within R.
+#' 
+#' @export
+summary_table = function(ndt_full_res=NULL,
+                         ndt_res=NULL,
+                         vars_in=NULL,
+                         doe_table=NULL) {
+  
+  if(is.null(ndt_full_res)) {
+    # within shiny
+    
+    in_data = vars_in$the_data
+    tau = ndt_res$tau
+    
+  } else {
+    # outside shiny
+    
+    in_data = ndt_full_res$vars_in$the_data
+    tau = ndt_full_res$ndt_res$tau
+    doe_table = get_doe_table(ndt_full_res)
+    
+  }
+  
+  if(is.null(tau)) {
+    tau = 0
+  }
+  
+  outdf = data.frame(lab=in_data$Laboratory)
+  outdf$x = in_data$Result
+  outdf$u = in_data$Uncertainty
+  outdf$nu = in_data$DegreesOfFreedom
+  outdf$ut = sqrt(outdf$u^2 + tau^2)
+  outdf$D = doe_table$DoE.x
+  outdf$uDR = doe_table$DoE.U.Pred
+  outdf$UDR = doe_table$DoE.U95.Pred
+  outdf$LwrR = doe_table$DoE.Lwr.Pred
+  outdf$UprR = doe_table$DoE.Upr.Pred
+  outdf$uDI = doe_table$DoE.U.Trade
+  outdf$UDI = doe_table$DoE.U95.Trade
+  outdf$LwrI = doe_table$DoE.Lwr.Trade
+  outdf$UprI = doe_table$DoE.Upr.Trade
+
+  return(outdf)
+  
+}
+
+get_table_descriptions_left = function() {
+  return(tagList(
+    p("lab  = Labels of the labs"),
+    p("x    = Measured values"),
+    p("u    = Reported standard uncertainties"),
+    p("nu   = Numbers of degrees of freedom"),
+    p("ut   = Lab uncertainties incorporating dark uncertainty (tau)"),
+    p("D    = Difference between measured value and consensus value"),
+    p("uDR  = u(D) recognizing tau")
+    
+  ))
+  
+}
+
+get_table_descriptions_right = function() {
+  return(tagList(
+    p("UDR  = U95(D) recognizing tau"),
+    p("LwrR = Lower endpoint of 95 % coverage interval for true D recognizing tau"),
+    p("UprR = Upper endpoint of 95 % coverage interval for true D recognizing tau"),
+    p("uDI  = u(D) ignoring tau"),
+    p("UDI  = U95(D) ignoring tau"),
+    p("LwrI = Lower endpoint of 95 % coverage interval for true D ignoring tau"),
+    p("UprI = Upper endpoint of 95 % coverage interval for true D ignoring tau")
+  ))
+  
 }
