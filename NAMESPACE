@@ -2,9 +2,9 @@
 
 export("%>%")
 export(MGG)
-export(doe_plot)
 export(get_KCplot)
 export(get_MCMC_diagnostics)
+export(get_doe_plot)
 export(get_doe_table)
 export(run_full_ndt)
 export(summary_table)

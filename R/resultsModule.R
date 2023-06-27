@@ -664,6 +664,7 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
           vars_in = vars_in()
           the_proc = isolate(selected_procedure())
           nsd = input$nsd
+          the_seed = input$random_seed
           doe_res = doe_res()
           doe_type = input$doe_type
           diagnostics = res$diagnostics
@@ -683,7 +684,8 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
                                             doe_type = doe_type,
                                             diagnostics = diagnostics,
                                             version = version,
-                                            results_table = results_table))
+                                            results_table = results_table,
+                                            the_seed = the_seed))
           })
           
           file.copy('./R/ResultsDownload.pdf',file)

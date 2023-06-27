@@ -30,11 +30,13 @@ for(ii in 1:length(methods_to_run)) {
                        thin = 10)
     
     summary_table(res)
-    doe_plot(res)
-    get_doe_table(res)
+    get_doe_plot(res,"1")
+    get_doe_plot(res,"2")
+    get_doe_table(res,"1")
+    get_doe_table(res,"2")
+    get_doe_table(res,NULL)
     get_MCMC_diagnostics(res)
     get_KCplot(res)
-    get_MCMC_diagnostics(res)
     
   }
   

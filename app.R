@@ -1,6 +1,7 @@
 library(shiny)
 library(ggplot2)
-library(decisiontree)
+library(magrittr, include.only = "%>%")
+library(symmetry, include.only = "MGG")
 
 version = "1.0.2"
 

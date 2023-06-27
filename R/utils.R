@@ -543,7 +543,12 @@ compute_doe_table = function(the_proc,
   
 }
 
-condense_doe_table = function(doe_data,doe_type="1") {
+condense_doe_table = function(doe_data,doe_type) {
+  
+  if(is.null(doe_type)) {
+    return(list(doe_data = doe_data, doe_plot_title = NULL))
+  }
+  
   
   if(doe_type == "1") {
     doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
@@ -556,7 +561,11 @@ condense_doe_table = function(doe_data,doe_type="1") {
     doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
     doe_data$DoE.U95 = doe_data$DoE.U95.Trade
     doe_plot_title = 'Unilateral Degrees of Equivalence (Ignoring Dark Uncertainty)'
-  }
+  
+  } 
+  
+  cols_to_remove = grep('(Trade)|(Pred)',colnames(doe_data))
+  doe_data = doe_data[,-cols_to_remove]
   
   return(list(doe_data = doe_data, doe_plot_title = doe_plot_title))
 
@@ -996,7 +1005,7 @@ get_MCMC_diagnostics = function(ndt_full_res) {
 #' @param doe_type Whether to include (doe_type="1") or ignore (doe_type="2") the
 #' contribution of dark uncertainty.
 #' @export
-get_doe_table = function(ndt_full_res,doe_type="1") {
+get_doe_table = function(ndt_full_res,doe_type=NULL) {
   
   doe_table = ndt_full_res$doe_table_res$DoE
   
@@ -1014,11 +1023,13 @@ get_doe_table = function(ndt_full_res,doe_type="1") {
 #' @param doe_type Whether to include (doe_type="1") or ignore (doe_type="2") the
 #' contribution of dark uncertainty.
 #' @export
-doe_plot = function(ndt_full_res,doe_type="1") {
+get_doe_plot = function(ndt_full_res,doe_type="1") {
   
-  doe_table = get_doe_table(ndt_full_res,doe_type=doe_type)
+  doe_table = ndt_full_res$doe_table_res$DoE
+  doe_table = condense_doe_table(doe_table,doe_type)
+  exclude = ndt_full_res$vars_in$the_data$Laboratory[!ndt_full_res$vars_in$which_to_compute]
   
-  DoEplot(doe_table)
+  DoEplot(DoE=doe_table$doe_data, title=doe_table$doe_plot_title, exclude=exclude)
   
 }
 
@@ -1052,7 +1063,7 @@ summary_table = function(ndt_full_res=NULL,
     
     in_data = ndt_full_res$vars_in$the_data
     tau = ndt_full_res$ndt_res$tau
-    doe_table = get_doe_table(ndt_full_res)
+    doe_table = get_doe_table(ndt_full_res,doe_type=NULL)
     
   }
   

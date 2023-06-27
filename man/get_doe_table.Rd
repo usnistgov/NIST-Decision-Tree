@@ -4,7 +4,7 @@
 \alias{get_doe_table}
 \title{DoE Table}
 \usage{
-get_doe_table(ndt_full_res, doe_type = "1")
+get_doe_table(ndt_full_res, doe_type = NULL)
 }
 \arguments{
 \item{ndt_full_res}{The output of running run_full_ndt()}

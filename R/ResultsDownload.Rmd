@@ -11,6 +11,7 @@ params:
   diagnostics: NA
   version: NA
   results_table: NA
+  the_seed: NA
 
 ---
 
@@ -27,6 +28,7 @@ the_proc = params$the_proc
 doe_res = params$doe_res
 doe_type = params$doe_type
 diagnostics = params$diagnostics
+the_seed = params$the_seed
 
 knitr::kable(
   vars_in$the_data
@@ -42,6 +44,7 @@ if(doe_type == '1') {
 
 cat(paste("Version Number:",version,'  \n'))
 cat(paste("Type of DoE: Degrees of Equivalence ",doe_name, '  \n'))
+cat(paste("Random Seed:",the_seed,'  \n'))
 cat(paste('Selected Procedure:', the_proc,'  \n'))
 
   # DSL

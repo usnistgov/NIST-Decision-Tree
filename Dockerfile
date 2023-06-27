@@ -6,7 +6,7 @@ RUN apt-get update -y && apt-get install -y \
     texlive-fonts-recommended \
     texlive-latex-extra
 
-RUN R -e "install.packages(c('shiny','shinythemes','symmetry','metafor'))"
+RUN R -e "install.packages(c('shiny','symmetry','metafor'))"
 RUN R -e "install.packages('rmutil')"
 RUN R -e "install.packages('spatstat')"
 RUN R -e "install.packages('viridis')"
@@ -18,7 +18,6 @@ RUN R -e "install.packages('rmarkdown')"
 RUN R -e "install.packages('extraDistr')"
 RUN R -e "install.packages('boot')"
 RUN R -e "tinytex::install_tinytex()"
-RUN R -e "install.packages('shinycssloaders')"
 
 COPY . /srv/shiny-server/
 
