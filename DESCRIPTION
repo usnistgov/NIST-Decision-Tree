@@ -2,8 +2,9 @@ Package: nistdecisiontree
 Title: Implements the NIST Decision Tree for Key Comparisons
 Version: 1.0.2
 Authors@R: c(
-    person("David", "Newton", email="david.newton@nist.gov",role = c("cre","aut"))
-    person("Antonio", "Possolo", email="antonio.possolo@nist.gov", role = c("aut")))
+    person("David", "Newton", email="david.newton@nist.gov",role = c("cre","aut")),
+    person("Antonio", "Possolo", email="antonio.possolo@nist.gov", role = c("aut")),
+    person("Amanda","Koepke", email="amanda.koepke@nist.gov", role=c("aut")))
 Description: What the package does (one paragraph).
 License: `use_mit_license()`
 Encoding: UTF-8
