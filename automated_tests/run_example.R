@@ -2,10 +2,8 @@ library(nistdecisiontree)
 
 set.seed(123)
 
-dataset = read.csv('example_dataset.csv')
-
-res = run_full_ndt(dataset = dataset,
-                   exclude = c(rep(F,nrow(dataset)-1),T),
+res = run_full_ndt(dataset = example_dataset,
+                   exclude = rep(F,nrow(example_dataset)),
                    procedure = 'Recommended',
                    num_bootstrap = 1000,
                    seed = 123,
