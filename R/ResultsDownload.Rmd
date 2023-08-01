@@ -158,13 +158,13 @@ if(doe_type == "1") {
   doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
   doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
   doe_data$DoE.U95 = doe_data$DoE.U95.Pred
-  doe_plot_title = 'Unilateral Degrees of Equivalence for Prediction'
+  doe_plot_title = 'Unilateral DoE (Recognizing Dark Uncertainty)'
   
 } else if(doe_type == "2") {
   doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
   doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
   doe_data$DoE.U95 = doe_data$DoE.U95.Trade
-  doe_plot_title = 'Unilateral Degrees of Equivalence for Trade'
+  doe_plot_title = 'Unilateral DoE (Ignoring Dark Uncertainty)'
 }
 
 outdf = doe_data[,c("Lab","DoE.x","DoE.U95","DoE.Lwr","DoE.Upr")]

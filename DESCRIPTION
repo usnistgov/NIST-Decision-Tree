@@ -1,13 +1,13 @@
-Package: decisiontree
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+Package: nistdecisiontree
+Title: Implements the NIST Decision Tree for Key Comparisons
+Version: 1.0.2
+Authors@R: c(
+    person("David", "Newton", email="david.newton@nist.gov",role = c("cre","aut"))
+    person("Antonio", "Possolo", email="antonio.possolo@nist.gov", role = c("aut")))
 Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: `use_mit_license()`
 Encoding: UTF-8
+URL: https://github.com/usnistgov/NIST-Decision-Tree
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports: 
