@@ -65,9 +65,9 @@ weightedMedian = function (x, ux, nux=NULL, K=10000, conf.level=0.95,
     ## associated standard uncertainty, a coverage interval for mu,
     ## and the boostrap replicates of the weighted median
 
-    require(spatstat.geom)
-    require(extraDistr)
-    require(boot)
+    #require(spatstat.geom)
+    #require(extraDistr)
+    #require(boot)
 
     if (!is.null(bootstrap) &&
         !(bootstrap %in% c("parametric", "nonparametric"))) {
@@ -96,9 +96,9 @@ weightedMedian = function (x, ux, nux=NULL, K=10000, conf.level=0.95,
         (!is.null(bootstrap) && (bootstrap=="nonparametric"))) {
         xm = function (xw,i) {spatstat.geom::weighted.median(xw[i,1], xw[i,2])}
         xw = cbind(x, 1/ux^2)
-        xm.boot = boot(xw, xm, R=K)
+        xm.boot = boot::boot(xw, xm, R=K)
         muB = xm.boot$t
-    } 
+    }
 
     if ((is.null(bootstrap) && (nUnique < 15)) ||
         (!is.null(bootstrap) && (bootstrap=="parametric"))) {
@@ -121,10 +121,10 @@ weightedMedian = function (x, ux, nux=NULL, K=10000, conf.level=0.95,
             ## of beta, where m = nux+1
             betaB = if (is.null(nux)) {beta
                     } else {sqrt(2)*(nux+1)*beta/rchisq(n, df=2*(nux+1))}
-            xB = rlaplace(n, mu=x, sigma=betaB)
+            xB = extraDistr::rlaplace(n, mu=x, sigma=betaB)
             muB[k] = spatstat.geom::weighted.median(xB, 1/(2*betaB^2))
         }
-    } 
+    }
 
     gamma = pnorm(1)-pnorm(-1)
     muHAT.u = symmetricalBootstrapCI(muB, estimate=muHAT.x, coverage=gamma)
@@ -138,4 +138,4 @@ weightedMedian = function (x, ux, nux=NULL, K=10000, conf.level=0.95,
 
 
 
-    
+
