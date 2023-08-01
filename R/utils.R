@@ -275,17 +275,17 @@ run_ndt_method = function(x,
     if(grepl('gauss.+gauss',the_proc,TRUE)) {
       res$method = "Hierarchical Gauss-Gauss"
       stan_filename = 'R/Stan/hgg.stan'
-      jags_filename = 'R/Jags/hgg.txt'
+      jags_filename = system.file("Jags/hgg.txt", package = "nistdecisiontree")
 
     } else if(grepl('laplace',the_proc,TRUE)){
       res$method = "Hierarchical Laplace-Gauss"
       stan_filename = 'R/Stan/hlg.stan'
-      jags_filename = 'R/Jags/hlg.txt'
+      jags_filename = system.file("Jags/hlg.txt", package = "nistdecisiontree")
 
     } else if(grepl('skew',the_proc,TRUE)) {
       res$method = "Skew Student-Gauss"
       stan_filename = 'R/Stan/hssg.stan'
-      jags_filename = 'R/Jags/hssg2.txt'
+      jags_filename = system.file("Jags/hssg2.txt", package = "nistdecisiontree")
     }
 
     mcmc_sampler = 'jags'
