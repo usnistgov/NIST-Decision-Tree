@@ -1,4 +1,10 @@
-.Rproj.user
-/rsconnect
 IAWG.*
 .Rhistory
+.Rprofile
+renv/library/
+renv/local/
+renv/cellar/
+renv/lock/
+renv/python/
+renv/sandbox/
+renv/staging/

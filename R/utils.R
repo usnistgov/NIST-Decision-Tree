@@ -1,7 +1,3 @@
-#' @import ggplot2
-#' @importFrom magrittr "%>%"
-#' @importFrom symmetry MGG
-
 select_test = function(chosen_test,rvs) {
   # changes all reactive values to 0 except for the selected proceudure
   # e.g. select_test('hgg', <reactive values>)
@@ -275,17 +271,17 @@ run_ndt_method = function(x,
     if(grepl('gauss.+gauss',the_proc,TRUE)) {
       res$method = "Hierarchical Gauss-Gauss"
       stan_filename = 'R/Stan/hgg.stan'
-      jags_filename = system.file("Jags/hgg.txt", package = "nistdecisiontree")
+      jags_filename = "Jags/hgg.txt"
 
     } else if(grepl('laplace',the_proc,TRUE)){
       res$method = "Hierarchical Laplace-Gauss"
       stan_filename = 'R/Stan/hlg.stan'
-      jags_filename = system.file("Jags/hlg.txt", package = "nistdecisiontree")
+      jags_filename = "Jags/hlg.txt"
 
     } else if(grepl('skew',the_proc,TRUE)) {
       res$method = "Skew Student-Gauss"
       stan_filename = 'R/Stan/hssg.stan'
-      jags_filename = system.file("Jags/hssg2.txt", package = "nistdecisiontree")
+      jags_filename = "Jags/hssg2.txt"
     }
 
     mcmc_sampler = 'jags'
@@ -728,22 +724,7 @@ get_mcmc_params = function(n_iter = 25000,
 
 }
 
-#' Run the full NDT procedure
-#'
-#' Runs the full NIST Decision Tree Procedure
-#' and outputs the results as a list. The output can be inspected
-#' directly and also used to generate tables and plots, e.g., get_KCplot()
-#'
-#' @param dataset An R data.frame with columns titled "Laboratory", "MeasuredValues", "StdUnc", and "DegreesOfFreedom"
-#' @param exclude A boolean vector of which labs to exclude from the KCRV computation.
-#' @param procedure Which procedure to run. E.g., "Recommended", "AWA","WM", "HGG", etc.
-#' @param num_bootstrap The number of bootstrap iterations, for the AWA and WM procedures.
-#' @param seed The random seed used for all simulations and mcmc.
-#' @param n_iter The total number of MCMC iterations.
-#' @param burn_in The number of burn-in MCMC iterations.
-#' @param thin The thinning rate for the MCMC iterations.
-#' @return A list of objects containing results pertaining to the analysis.
-#' @export
+
 run_full_ndt = function(dataset,
                         exclude,
                         procedure = "Recommended",
@@ -809,13 +790,7 @@ run_full_ndt = function(dataset,
               vars_in = vars_in))
 }
 
-#' Create KCRV and Lab Uncertainty Plot
-#'
-#' Creates a plot of the KCRV estimate and uncertainty, along with labs
-#' and their uncertainties.
-#'
-#' @param ndt_full_res The output of running run_full_ndt()
-#' @export
+
 get_KCplot = function(ndt_full_res) {
 
   ndt_res = ndt_full_res$ndt_res
@@ -838,26 +813,13 @@ get_KCplot = function(ndt_full_res) {
 
 }
 
-#' MCMC Diagnostics
-#'
-#' If applicable, prints n_eff and Rhat from the MCMC sampler.
-#'
-#' @param ndt_full_res The output of running run_full_ndt()
-#' @export
+
 get_MCMC_diagnostics = function(ndt_full_res) {
 
   return(ndt_full_res$ndt_res$diagnostics)
 
 }
 
-#' DoE Table
-#'
-#' Returns the DoE Table
-#'
-#' @param ndt_full_res The output of running run_full_ndt()
-#' @param doe_type Whether to include (doe_type="1") or ignore (doe_type="2") the
-#' contribution of dark uncertainty.
-#' @export
 get_doe_table = function(ndt_full_res,doe_type=NULL) {
 
   doe_table = ndt_full_res$doe_table_res$DoE
@@ -868,14 +830,6 @@ get_doe_table = function(ndt_full_res,doe_type=NULL) {
 
 }
 
-#' DoE Plot
-#'
-#' Outputs DoE plot.
-#'
-#' @param ndt_full_res The output of running run_full_ndt()
-#' @param doe_type Whether to include (doe_type="1") or ignore (doe_type="2") the
-#' contribution of dark uncertainty.
-#' @export
 get_doe_plot = function(ndt_full_res,doe_type="1") {
 
   doe_table = ndt_full_res$doe_table_res$DoE
@@ -886,20 +840,6 @@ get_doe_plot = function(ndt_full_res,doe_type="1") {
 
 }
 
-#' Lab Uncertainties Table
-#'
-#' Returns a dataframe of uncertainties associated with each lab,
-#' for both the lab means and DoE. Uncertainties are returned for
-#' cases where dark uncertainty is both included and ignored.
-#' @param ndt_full_res The output of running run_full_ndt()
-#' @param ndt_res Used only for the NDT Shiny app. Leave as NULL for use from
-#' within R.
-#' @param vars_in Used only for the NDT Shiny app. Leave as NULL for use from
-#' within R.
-#' @param doe_table Used only for the NDT Shiny app. Leave as NULL for use from
-#' within R.
-#'
-#' @export
 summary_table = function(ndt_full_res=NULL,
                          ndt_res=NULL,
                          vars_in=NULL,
@@ -969,3 +909,5 @@ get_table_descriptions_right = function() {
   ))
 
 }
+
+

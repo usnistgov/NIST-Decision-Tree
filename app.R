@@ -1,17 +1,17 @@
 library(shiny)
 library(ggplot2)
-library(magrittr, include.only = "%>%")
-library(symmetry, include.only = "MGG")
+library(dplyr,include.only = "%>%")
+library(symmetry,include.only = "MGG")
 
 version = "1.0.2"
 
 ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
-                
+
                 ### styling
-                tags$link(rel="stylesheet",href="my_style.css"),
-                tags$link(rel='stylesheet',href='nist-style.css'),
-                
-                tags$head(tags$link(rel="shortcut icon", href="./favicon.ico")),
+                tags$link(rel="stylesheet",href='my_style.css'),
+                tags$link(rel='stylesheet',href='nist-style.css',),
+
+                tags$head(tags$link(rel="shortcut icon", href="favicon.ico")),
                 tags$head(HTML("<title>NIST Decision Tree</title>")),
                 tags$head(HTML(
                   '<!-- Global site tag (gtag.js) - Google Analytics -->
@@ -20,13 +20,13 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag("js", new Date());
-  
+
             gtag("config", "G-4XRM4LDBLT");
           </script>'
                 )),
-                
+
                 #tags$div(HTML('<class="nist-header">')),
-                
+
                 tags$div(HTML('<header class="nist-header" id="nist-header" role="banner">
                     <a href="https://www.nist.gov/" title="National Institute of Standards and Technology" class="nist-header__logo-link" rel="home">
                       <svg aria-hidden="true" class="nist-header__logo-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32">
@@ -44,35 +44,35 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
                         </g>
                       </svg>
                     </a>
-                    
+
                     </header>')),
-                
+
                 ### end styling
-                
+
                 column(width=11,
-                       
+
                        titlePanel("NIST Decision Tree for Key Comparisons"),
                        h4(paste("Version",version),style="text-align:right"),
-                       
+
                        tabsetPanel(
-                         
+
                          tabPanel("0. About", aboutUI('about')),
-                         
+
                          tabPanel("1. Data Input", inputUI('input')),
-                         
+
                          tabPanel("2. Decision Tree",DT_UI('DT')),
-                         
+
                          tabPanel("3. Fit Model",resultsUI('results')),
-                         
+
                          selected='1. Data Input',
-                         
+
                        ),
-                       
+
                        br()
                 ),
-                
+
                 ### footer ###
-                
+
                 tags$div(HTML(
                   '<footer class="nist-footer">
           <div class="nist-footer__inner">
@@ -130,28 +130,29 @@ ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
           </div>
           </footer>'
                 ))
-                
+
                 ### footer end ###
-                
-                
-                
+
+
+
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-  
+
   about_server('about')
-  
+
   vars_in <- input_server('input')
-  
+
   selected_procedure <- DT_server('DT', vars_in)
-  
+
   resultsServer('results', vars_in, selected_procedure, version)
-  
+
 }
 
-# Run the application 
-shinyApp(ui = ui, server = server)
+shinyApp(ui=ui,server=server)
+
+
 
 
 
