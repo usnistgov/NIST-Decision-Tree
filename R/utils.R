@@ -199,6 +199,15 @@ run_ndt_method = function(x,
                           jags_params,
                           seed,
                           priors) {
+  
+  # x: vector of lab data
+  # u: vector of lab uncertainties
+  # the_proc: name of selected procedre
+  # num_bootstarp: number of bootstrap iterations for non-bayes methods
+  # jags_params: list of options for the mcmc sampler
+  # seed: random number seed
+  # priors: priors for the bayes models
+      # mu_prior_loc, mu_prior_scale, etc.
 
   set.seed(abs(round(seed)))
   res = list()
@@ -298,8 +307,8 @@ run_ndt_method = function(x,
                       x=x,
                       u2=u^2,
                       dof=dof,
-                      mu_prior_loc = mean(x),
-                      mu_prior_scale = (1/sqrt(3))*sd(x),
+                      mu_prior_loc = priors$mu_prior_loc,
+                      mu_prior_scale = priors$mu_prior_scale,
                       tau_prior_scale = priors$tau_prior_scale,
                       sigma_prior_scale = priors$sigma_prior_scale)
 
@@ -660,52 +669,19 @@ convert_acronyms_to_full_names = function(acronym) {
 
 }
 
-get_prior_default = function(x,u,which_param) {
-
-  if(which_param == 'tau_scale') {
-    return(mad(x))
-
-  } else if(which_param == 'sigma_scale') {
-    return(median(u))
-
-  } else if(which_param == 'nu_shape') {
-    return(3)
-
-  } else if(which_param == 'nu_scale') {
-    return(.25)
-
-  } else if(which_param == 'alpha_scale') {
-    return(4)
-
-  }
 
 
-
-
-}
-
-get_jags_default_priors = function(acronym,x,u) {
-
-  if(acronym %in% c('AWA','WM')) {
-
-    return(NULL)
-
-  }
+get_default_priors = function(x,u) {
 
   priors = list(
-    tau_prior_scale = get_prior_default(x,u,'tau_scale'),
-    sigma_prior_scale = get_prior_default(x,u,'sigma_scale')
+    mu_prior_loc = mean(x),
+    mu_prior_scale = round((1/sqrt(3)),4)*sd(x),
+    tau_prior_scale = mad(x),
+    sigma_prior_scale = median(u),
+    nu_prior_shape = 3,
+    nu_prior_scale = .25,
+    alpha_prior_scale = 4
   )
-
-
-  if(acronym == 'HSSG') {
-
-    priors$nu_prior_shape = get_prior_default(x,u,'nu_shape')
-    priors$nu_prior_scale = get_prior_default(x,u,'nu_scale')
-    priors$alpha_prior_scale = get_prior_default(x,u,'alpha_scale')
-
-
-  }
 
   return(priors)
 
@@ -775,7 +751,7 @@ run_full_ndt = function(dataset,
                                               burn_in = burn_in,
                                               thin = thin),
                            seed = seed,
-                           priors = get_jags_default_priors(the_proc,vars_in$measured_vals,vars_in$standard_unc))
+                           priors = get_default_priors(vars_in$measured_vals,vars_in$standard_unc))
 
   print("Method complete, computing DoE...")
 

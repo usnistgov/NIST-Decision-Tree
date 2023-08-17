@@ -8,3 +8,4 @@ renv/lock/
 renv/python/
 renv/sandbox/
 renv/staging/
+.Rproj.user

@@ -177,9 +177,8 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
 
         x = vars_in()$measured_vals
         u = vars_in()$standard_unc
-
-        default_tps = get_prior_default(x,u,'tau_scale')
-        default_sps = get_prior_default(x,u,'sigma_scale')
+        
+        def_priors = get_default_priors(x,u)
 
         if(grepl('average',the_proc,TRUE)) {
 
@@ -193,7 +192,7 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
                 column(3,
                   numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
                 ),
-                column(4,
+                column(3,
                   numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
                                value=4,
                                min=1,
@@ -221,7 +220,7 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
                 column(3,
                        numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
                 ),
-                column(4,
+                column(3,
                        numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
                                     value=4,
                                     min=1,
@@ -238,8 +237,7 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
           )
 
         } else if(grepl('(laplace)|(gauss.+gauss)',the_proc,TRUE)) {
-
-
+          
           return(
             tagList(
               h3("General Parameters",style='text-align:center'),
@@ -248,7 +246,7 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
                 column(3,
                        numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
                 ),
-                column(4,
+                column(3,
                        numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
                                     value=4,
                                     min=1,
@@ -268,8 +266,10 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
               h3("Prior Distribution Parameters",style='text-align:center'),
               br(),
               fluidRow(
-                column(3,numericInput(session$ns('tau_prior_scale'),"Tau Prior Median (Default: mad(x))",value=default_tps)),
-                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median (Default: med(u))',value=default_sps))
+                column(3,numericInput(session$ns('mu_prior_loc'),"Mu Prior Location (Default: mean(x))",value=def_priors$mu_prior_loc)),
+                column(3,numericInput(session$ns('mu_prior_scale'),"Mu Prior Scale (Default: sd(x)/sqrt(3))",value=def_priors$mu_prior_scale)),
+                column(3,numericInput(session$ns('tau_prior_scale'),"Tau Prior Median (Default: mad(x))",value=def_priors$tau_prior_scale)),
+                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Median (Default: med(u))',value=def_priors$sigma_prior_scale))
               ),
               br()
 
@@ -277,19 +277,18 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
           )
 
         } else {
-
-
-
+          # HSSG
+          
           return(
             tagList(
 
               h3("General Parameters",style='text-align:center'),
               br(),
               fluidRow(
-                column(4,
+                column(3,
                        numericInput(session$ns('random_seed'),"Random Number Seed",value=sample(1:1000,size=1)),
                 ),
-                column(4,
+                column(3,
                        numericInput(session$ns('nsd'),"Number of Significant Digits Reported",
                                     value=4,
                                     min=1,
@@ -312,13 +311,15 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
               h3("Prior Distribution Parameters",style='text-align:center'),
               br(),
               fluidRow(
-                column(3,numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale (Default: mad(x))",value=get_prior_default(x,u,'tau_scale'))),
-                column(3,numericInput(session$ns('nu_prior_shape'),"Gamma Shape for Nu Prior Scale",value=get_prior_default(x,u,'nu_shape'))),
-                column(3,numericInput(session$ns('nu_prior_scale'),"Gamma Scale for Nu Prior Scale",value=get_prior_default(x,u,'nu_scale')))
+                column(3,numericInput(session$ns('mu_prior_loc'),"Mu Prior Location (Default: mean(x))",value=def_priors$mu_prior_loc)),
+                column(3,numericInput(session$ns('mu_prior_scale'),"Mu Prior Scale (Default: sd(x)/sqrt(3))",value=def_priors$mu_prior_scale)),
+                column(3,numericInput(session$ns('tau_prior_scale'),"Tau Prior Scale (Default: mad(x))",value=def_priors$tau_prior_scale)),
+                column(3,numericInput(session$ns('nu_prior_shape'),"Gamma Shape for Nu Prior Scale",value=def_priors$nu_prior_shape)),
+                column(3,numericInput(session$ns('nu_prior_scale'),"Gamma Scale for Nu Prior Scale",value=def_priors$nu_prior_scale))
               ),
               fluidRow(
-                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale (Default: med(x))',value=get_prior_default(x,u,'sigma_scale'))),
-                column(3,numericInput(session$ns('alpha_prior_scale'),'Alpha (Skewness) Prior Scale',value=get_prior_default(x,u,'alpha_scale')))
+                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale (Default: med(x))',value=prior_def$sigma_prior_scale)),
+                column(3,numericInput(session$ns('alpha_prior_scale'),'Alpha (Skewness) Prior Scale',value=prior_def$alpha_prior_scale))
               )
             )
           )
@@ -365,6 +366,8 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
         num_bootstrap = input$num_bootstrap
 
         priors = list(
+          mu_prior_loc = input$mu_prior_loc,
+          mu_prior_scale = input$mu_prior_scale,
           tau_prior_scale = input$tau_prior_scale,
           sigma_prior_scale = input$sigma_prior_scale,
           nu_prior_shape = input$nu_prior_shape,
@@ -376,13 +379,13 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
 
 
           res = run_ndt_method(x=x,
-                                                  u=u,
-                                                  dof=dof,
-                                                  the_proc = the_proc,
-                                                  num_bootstrap = num_bootstrap,
-                                                  jags_params = jags_params,
-                                                  seed = seed,
-                                                  priors = priors)
+                               u=u,
+                               dof=dof,
+                               the_proc = the_proc,
+                               num_bootstrap = num_bootstrap,
+                               jags_params = jags_params,
+                               seed = seed,
+                               priors = priors)
 
         },value = 1,message="Running selected procedure...")
 
