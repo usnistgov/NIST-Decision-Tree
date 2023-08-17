@@ -318,8 +318,8 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
                 column(3,numericInput(session$ns('nu_prior_scale'),"Gamma Scale for Nu Prior Scale",value=def_priors$nu_prior_scale))
               ),
               fluidRow(
-                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale (Default: med(x))',value=prior_def$sigma_prior_scale)),
-                column(3,numericInput(session$ns('alpha_prior_scale'),'Alpha (Skewness) Prior Scale',value=prior_def$alpha_prior_scale))
+                column(3,numericInput(session$ns('sigma_prior_scale'),'Sigma Prior Scale (Default: med(x))',value=def_priors$sigma_prior_scale)),
+                column(3,numericInput(session$ns('alpha_prior_scale'),'Alpha (Skewness) Prior Scale',value=def_priors$alpha_prior_scale))
               )
             )
           )
