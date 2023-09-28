@@ -1,6 +1,5 @@
-renv/
-renv.lock
 .Rhistory
-.Rprofile
 decisiontree.Rproj
 .Rproj.user/
+renv.lock
+renv/

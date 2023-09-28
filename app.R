@@ -3,7 +3,7 @@ library(ggplot2)
 library(dplyr,include.only = "%>%")
 library(symmetry,include.only = "MGG")
 
-version = "1.0.2"
+version = "1.0.3"
 
 ui <- fluidPage(id='fullpage',#shinytheme('spacelab'),
 

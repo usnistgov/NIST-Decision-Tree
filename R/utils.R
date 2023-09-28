@@ -389,7 +389,8 @@ run_ndt_method = function(x,
 compute_doe_table = function(the_proc,
                              vars_in,
                              res,
-                             num_bootstrap) {
+                             num_bootstrap,
+                             the_seed) {
 
   if(grepl('average',the_proc,TRUE)) {
 
@@ -674,10 +675,10 @@ convert_acronyms_to_full_names = function(acronym) {
 get_default_priors = function(x,u) {
 
   priors = list(
-    mu_prior_loc = mean(x),
-    mu_prior_scale = round((1/sqrt(3)),4)*sd(x),
-    tau_prior_scale = mad(x),
-    sigma_prior_scale = median(u),
+    mu_prior_loc = signif(mean(x),4),
+    mu_prior_scale = signif(round((1/sqrt(3)),4)*sd(x),4),
+    tau_prior_scale = signif(mad(x),4),
+    sigma_prior_scale = signif(median(u),4),
     nu_prior_shape = 3,
     nu_prior_scale = .25,
     alpha_prior_scale = 4

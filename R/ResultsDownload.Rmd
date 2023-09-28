@@ -188,6 +188,8 @@ knitr::kable(
 
 ```{r}
 
+results_table[,2:ncol(results_table)] = signif(results_table[,2:ncol(results_table)],nsd)
+
 knitr::kable(
   results_table[,1:5]
 )

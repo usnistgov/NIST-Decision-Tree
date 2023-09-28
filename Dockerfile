@@ -1,4 +1,4 @@
-FROM rocker/shiny:4.1.1
+FROM rocker/shiny:4.3.1
 
 RUN apt-get update -y && apt-get install -y \
     jags \
@@ -6,29 +6,30 @@ RUN apt-get update -y && apt-get install -y \
     texlive-fonts-recommended \
     texlive-latex-extra
     
-#COPY renv.lock /srv/shiny-server
-#COPY .Rprofile /srv/shiny-server
-#COPY renv/ srv/shiny-server
+WORKDIR /srv/shiny-server/
 
-WORKDIR /srv/shiny-server
-
-RUN R -e "install.packages(c('shiny','shinythemes','symmetry','metafor'))"
-RUN R -e "install.packages('tidyverse')"
-RUN R -e "install.packages('rmutil')"
-RUN R -e "install.packages('spatstat')"
-RUN R -e "install.packages('viridis')"
+RUN R -e "install.packages('boot')"
+RUN R -e "install.packages('dplyr')"
+RUN R -e "install.packages('DT')"
+RUN R -e "install.packages('extraDistr')"
+RUN R -e "install.packages('ggplot2')"
+RUN R -e "install.packages('knitr')"
+RUN R -e "install.packages('metafor')"
 RUN R -e "install.packages('R2jags')"
 RUN R -e "install.packages('rhandsontable')"
-RUN R -e "install.packages('DT')"
-RUN R -e "install.packages('tinytex')"
 RUN R -e "install.packages('rmarkdown')"
-RUN R -e "install.packages('extraDistr')"
-RUN R -e "install.packages('boot')"
-RUN R -e "tinytex::install_tinytex()"
-#RUN R -e "install.packages('renv')"
-#RUN R -e "renv::restore(prompt=FALSE)"
-#RUN R -e "tinytex::install_tinytex(force=TRUE)"
-#RUN R -e "install.packages('jsonlite', dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('rmutil')"
+RUN R -e "install.packages('shiny')"
+RUN R -e "install.packages('shinythemes')"
+RUN R -e "install.packages('spatstat')"
+RUN R -e "install.packages('symmetry')"
+RUN R -e "install.packages('tinytex')"
+RUN R -e "install.packages('viridis')"
+
+RUN R -e "tinytex::install_tinytex(force=TRUE)"
+RUN R -e "install.packages('jsonlite')"
+#RUN R -e "install.packages('jsonlite',dependencies=TRUE,repos = 'https://cran.r-project.org')"
+#RUN R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/jsonlite/jsonlite_1.8.4.tar.gz',repos=NULL,type='source')"
 
 COPY . /srv/shiny-server
 

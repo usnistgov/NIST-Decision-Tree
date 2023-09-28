@@ -313,8 +313,8 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
               fluidRow(
                 column(3,numericInput(session$ns('mu_prior_loc'),"Mu Prior Location (Default: mean(x))",value=def_priors$mu_prior_loc)),
                 column(3,numericInput(session$ns('mu_prior_scale'),"Mu Prior Scale (Default: sd(x)/sqrt(3))",value=def_priors$mu_prior_scale)),
-                column(3,numericInput(session$ns('nu_prior_shape'),"Gamma Shape for Nu Prior Scale",value=def_priors$nu_prior_shape)),
-                column(3,numericInput(session$ns('nu_prior_scale'),"Gamma Scale for Nu Prior Scale",value=def_priors$nu_prior_scale))
+                column(3,numericInput(session$ns('nu_prior_shape'),"Nu Prior Shape",value=def_priors$nu_prior_shape)),
+                column(3,numericInput(session$ns('nu_prior_scale'),"Nu Prior Scale",value=def_priors$nu_prior_scale))
                 
               ),
               fluidRow(
@@ -485,16 +485,13 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
         res = res()
         num_bootstrap = input$num_bootstrap
 
-        doe_table = compute_doe_table(the_proc=the_proc,
-                                                         vars_in=vars_in,
-                                                         res=res,
-                                                         num_bootstrap=num_bootstrap)$DoE
+        doe_table = doe_res()$DoE
 
         out_table = summary_table(ndt_res=res,
                                   vars_in=vars_in,
                                   doe_table=doe_table)
 
-        out_table[,2:ncol(out_table)] = round(out_table[,2:ncol(out_table)],input$nsd)
+        out_table[,2:ncol(out_table)] = signif(out_table[,2:ncol(out_table)],input$nsd)
 
         return(out_table)
 
@@ -527,13 +524,12 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
         withProgress({
 
           out = compute_doe_table(the_proc=the_proc,
-                                                     vars_in=vars_in,
-                                                     res=res,
-                                                     num_bootstrap=num_bootstrap)
+                                  vars_in=vars_in,
+                                  res=res,
+                                  num_bootstrap=num_bootstrap)
 
         },value=1,message="Computing DoEs...")
-
-
+        
         return(out)
 
       })
