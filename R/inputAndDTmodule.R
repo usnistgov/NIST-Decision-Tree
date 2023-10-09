@@ -202,7 +202,7 @@ input_server <- function(id) {
         if(any(is.na(the_data$Laboratory ))) {
           validated(-1)
           return("Empty or invalid cells detected in Laboratory column.
-                 Please make sure no lab names are left blank..")
+                 Please make sure no lab names are left blank.")
         }
         
         if(any(is.na(the_data$Result))) {
