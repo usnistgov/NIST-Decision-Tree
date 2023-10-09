@@ -199,10 +199,28 @@ input_server <- function(id) {
         the_data$DegreesOfFreedom[is.na(the_data$DegreesOfFreedom)] = 10000
 
         # cannot have empty Lab, Result, or Uncertainty
-        if(any(is.na(c(the_data$Laboratory, the_data$Result, the_data$Uncertainty )))) {
+        if(any(is.na(the_data$Laboratory ))) {
           validated(-1)
-          return("Empty cells detected in Laboratory, Result, or Uncertainty columns.
-                 Please make sure all cells in these column contain valid values.")
+          return("Empty or invalid cells detected in Laboratory column.
+                 Please make sure no lab names are left blank..")
+        }
+        
+        if(any(is.na(the_data$Result))) {
+          validated(-1)
+          return("Empty or invalid cells detected in MeasuredValues column.
+                 Please make sure all cells in this column are numeric valued.")
+        }
+        
+        if(any(is.na(the_data$Uncertainty))) {
+          validated(-1)
+          return("Empty or invalid cells detected in StdUnc column.
+                 Please make sure all cells in this column are postive numbers.")
+        }
+        
+        if(any(the_data$Laboratory == '')) {
+          validated(-1)
+          return("Empty string detected in Laboratory column.
+                 Please make sure no lab names are left blank.")
         }
 
         if(any(dof < 1)) {
@@ -226,7 +244,8 @@ input_server <- function(id) {
 
         if(sum(which_to_compute) < 3) {
           validated(-1)
-          return("Need at least 3 observations to use the decision tree.")
+          return("Need to have at least 3 labs included in the analysis to proceed.
+                 Please make sure at least 3 rows are checked in the first column.")
         }
 
         if(length(the_data$Laboratory) != length(unique(the_data$Laboratory))) {
@@ -273,7 +292,7 @@ input_server <- function(id) {
           )
         } else if(validated() == 0) {
           return(h5("Inputs not yet validated. Please validate inputs before running model.",
-                    style="color:#DAA520"))
+                    style="color:#e68a00"))
         }
 
       })
