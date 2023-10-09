@@ -587,16 +587,18 @@ resultsServer <- function(id,vars_in,selected_procedure,version) {
             doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
             doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
             doe_data$DoE.U95 = doe_data$DoE.U95.Pred
-            doe_data$DoE.U = doe_data$DoE.U.Pred
+            doe_data$DoE.u = doe_data$DoE.U.Pred
 
           } else if(doe_type == "2") {
             doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
             doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
             doe_data$DoE.U95 = doe_data$DoE.U95.Trade
-            doe_data$DoE.U = doe_data$DoE.U.Trade
+            doe_data$DoE.u = doe_data$DoE.U.Trade
           }
+          
+          doe_data = condense_doe_table(doe_data,doe_type)$doe_data
 
-          outdf = doe_data[,c("Lab","DoE.x","DoE.U","DoE.U95","DoE.Lwr","DoE.Upr")]
+          outdf = doe_data[,c("Lab","DoE.x","DoE.u","DoE.U95","DoE.Lwr","DoE.Upr")]
 
           return(outdf)
 

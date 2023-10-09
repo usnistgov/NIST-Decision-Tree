@@ -190,14 +190,20 @@ input_server <- function(id) {
         the_data = rhandsontable::hot_to_r(input$hot)
         colnames(the_data) = c('Include','Laboratory','Result','Uncertainty','DegreesOfFreedom')
 
-        which_to_compute = as.logical(the_data$Include)
+        the_data$Include[is.na(the_data$Include)] = FALSE
+        which_to_compute = as.logical(the_data$Include) 
         measured_vals = as.numeric(the_data$Result)[which_to_compute]
         standard_unc = as.numeric(the_data$Uncertainty)[which_to_compute]
         dof = as.numeric(the_data$DegreesOfFreedom)[which_to_compute]
         dof[is.na(dof)] = 10000
         the_data$DegreesOfFreedom[is.na(the_data$DegreesOfFreedom)] = 10000
 
-
+        # cannot have empty Lab, Result, or Uncertainty
+        if(any(is.na(c(the_data$Laboratory, the_data$Result, the_data$Uncertainty )))) {
+          validated(-1)
+          return("Empty cells detected in Laboratory, Result, or Uncertainty columns.
+                 Please make sure all cells in these column contain valid values.")
+        }
 
         if(any(dof < 1)) {
           validated(-1)

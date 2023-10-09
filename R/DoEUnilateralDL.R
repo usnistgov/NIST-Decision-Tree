@@ -144,13 +144,15 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
     D_trade = array(dim=c(K,nI))
     dimnames(D_pred)[[2]] = lab
     dimnames(D_trade)[[2]] = lab
-    muB = numeric(K)
+    muB_pred = numeric(K)
+    muB_trade = numeric(K)
+    
     for (k in 1:K)
     {
       tau2B = sampleFromTau2Dist(x,u) 
       
-      xB_pred = rnorm(nI, mean=mu, sd=sqrt(tau2B + u^2))
       xB_trade = rnorm(nI, mean=mu, sd=sqrt(u^2))
+      xB_pred = xB_trade + rnorm(nI,mean=0,sqrt(tau2B))
       
       uB = rep(NA, nI)
       
@@ -162,12 +164,15 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
         uB[!indexInf] = u[!indexInf]*sqrt(nu[!indexInf]/rchisq(sum(!indexInf), df=nu[!indexInf]))
       }
       
-      muB[k] = metafor::rma(yi=xB_pred, sei=uB, method="DL",
-                            knha=FALSE)$b
+      muB_pred[k] = metafor::rma(yi=xB_pred, sei=uB, method="DL",
+                                 knha=FALSE)$b
+      
+      muB_trade[k] = metafor::rma(yi=xB_trade, sei=uB, method="DL",
+                                  knha=FALSE)$b
       
       
-      D_pred[k,] = xB_pred - as.vector(muB[k])
-      D_trade[k,] = xB_trade - as.vector(muB[k])
+      D_pred[k,] = xB_pred - as.vector(muB_pred[k])
+      D_trade[k,] = xB_trade - as.vector(muB_trade[k])
     }
     
     DoE.x = x - as.vector(mu)
@@ -217,7 +222,6 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
   DoE.U95.Pred = hw_vec_pred
   DoE.U95.Trade = hw_vec_trade
   
-  
   ### Analysis for excluded labs
   
   if(n.All>nI){
@@ -242,8 +246,8 @@ DoEUnilateralDL = function (x.All, u.All, nu.All, lab.All, K,LOO, coverageProb, 
         
       }else{
         # muB is bootstrapped mu's 
-        DoE.U.excluded.pred[j]=sqrt(u.excluded[j]^2 + var(muB) + DLRes$tau2) 
-        DoE.U.excluded.trade[j]=sqrt(u.excluded[j]^2 + var(muB)) 
+        DoE.U.excluded.pred[j]=sqrt(u.excluded[j]^2 + var(muB_pred) + DLRes$tau2) 
+        DoE.U.excluded.trade[j]=sqrt(u.excluded[j]^2 + var(muB_trade)) 
       }
       
       D.excluded.pred[,j]=rnorm(K, mean=DoE.x.excluded[j], sd=sqrt(u.excluded[j]^2 + DLRes$tau2))

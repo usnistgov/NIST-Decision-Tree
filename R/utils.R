@@ -560,12 +560,14 @@ condense_doe_table = function(doe_data,doe_type) {
     doe_data$DoE.Lwr = doe_data$DoE.Lwr.Pred
     doe_data$DoE.Upr = doe_data$DoE.Upr.Pred
     doe_data$DoE.U95 = doe_data$DoE.U95.Pred
+    doe_data$DoE.u = doe_data$DoE.U.Pred
     doe_plot_title = 'Unilateral Degrees of Equivalence (Recognizing Dark Uncertainty)'
 
   } else if(doe_type == "2") {
     doe_data$DoE.Lwr = doe_data$DoE.Lwr.Trade
     doe_data$DoE.Upr = doe_data$DoE.Upr.Trade
     doe_data$DoE.U95 = doe_data$DoE.U95.Trade
+    doe_data$DoE.u = doe_data$DoE.U.Trade
     doe_plot_title = 'Unilateral Degrees of Equivalence (Ignoring Dark Uncertainty)'
 
   }

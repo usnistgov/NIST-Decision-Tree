@@ -1,5 +1,7 @@
 library(ggplot2)
 
+setwd("~/ByScientist/AntonioPossolo/CODES/CODES/decisiontree")
+
 source('R/utils.R')
 source('R/KCplotDoEplot_6_22.R')
 source('R/sampleFromTau2Dist.R')
