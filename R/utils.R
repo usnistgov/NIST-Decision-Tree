@@ -364,17 +364,38 @@ run_ndt_method = function(x,
 
 
       p_samples = jags_out$BUGSoutput$sims.list
-
-      res$mu = mean(p_samples$mu)
-      hw = symmetricalBootstrapCI(p_samples$mu,res$mu,.95)
-      res$mu_upper = res$mu + hw
-      res$mu_lower = res$mu - hw
-      res$se = sd(p_samples$mu)
-      res$tau = median(p_samples$tau)
-      res$tau_lower = quantile(p_samples$tau,.025)
-      res$tau_upper = quantile(p_samples$tau,.975)
-      res$p_samples = p_samples
-      res$diagnostics = as.data.frame(jags_out$BUGSoutput$summary[,c('Rhat','n.eff')])
+      
+      if(grepl('skew',the_proc,TRUE)) {
+        
+        cat("running skewt",file=stderr())
+        
+        k1 = mean(rgamma(10000,shape=median(p_samples$nu)/2,rate=median(p_samples$nu/2)))
+        res$mu = mean(p_samples$mu + sqrt(2/pi)*k1*p_samples$tau*p_samples$delta) 
+        #hw = symmetricalBootstrapCI(p_samples$mu,res$mu,.95)
+        hw = (quantile(p_samples$mu,.975) - quantile(p_samples$mu,.025))/2
+        res$mu_upper = res$mu + hw
+        res$mu_lower = res$mu - hw
+        res$se = sd(p_samples$mu)
+        res$tau = median(p_samples$tau)
+        res$tau_lower = quantile(p_samples$tau,.025)
+        res$tau_upper = quantile(p_samples$tau,.975)
+        res$p_samples = p_samples
+        res$diagnostics = as.data.frame(jags_out$BUGSoutput$summary[,c('Rhat','n.eff')])
+        
+      } else {
+        
+        res$mu = mean(p_samples$mu)
+        hw = symmetricalBootstrapCI(p_samples$mu,res$mu,.95)
+        res$mu_upper = res$mu + hw
+        res$mu_lower = res$mu - hw
+        res$se = sd(p_samples$mu)
+        res$tau = median(p_samples$tau)
+        res$tau_lower = quantile(p_samples$tau,.025)
+        res$tau_upper = quantile(p_samples$tau,.975)
+        res$p_samples = p_samples
+        res$diagnostics = as.data.frame(jags_out$BUGSoutput$summary[,c('Rhat','n.eff')])
+        
+      }
 
     }
 
@@ -844,19 +865,26 @@ summary_table = function(ndt_full_res=NULL,
   }
 
   outdf = data.frame(lab=in_data$Laboratory)
+  
   outdf$x = in_data$Result
   outdf$u = in_data$Uncertainty
   outdf$nu = in_data$DegreesOfFreedom
   outdf$ut = sqrt(outdf$u^2 + tau^2)
-  outdf$D = doe_table$DoE.x
-  outdf$uDR = doe_table$DoE.U.Pred
-  outdf$UDR = doe_table$DoE.U95.Pred
-  outdf$LwrR = doe_table$DoE.Lwr.Pred
-  outdf$UprR = doe_table$DoE.Upr.Pred
-  outdf$uDI = doe_table$DoE.U.Trade
-  outdf$UDI = doe_table$DoE.U95.Trade
-  outdf$LwrI = doe_table$DoE.Lwr.Trade
-  outdf$UprI = doe_table$DoE.Upr.Trade
+  
+  for(ii in 1:nrow(outdf)) {
+    the_row = which(doe_table$Lab == outdf$lab[ii])
+    
+    outdf$D[ii] = doe_table$DoE.x[the_row]
+    outdf$uDR[ii] = doe_table$DoE.U.Pred[the_row]
+    outdf$UDR[ii] = doe_table$DoE.U95.Pred[the_row]
+    outdf$LwrR[ii] = doe_table$DoE.Lwr.Pred[the_row]
+    outdf$UprR[ii] = doe_table$DoE.Upr.Pred[the_row]
+    outdf$uDI[ii] = doe_table$DoE.U.Trade[the_row]
+    outdf$UDI[ii] = doe_table$DoE.U95.Trade[the_row]
+    outdf$LwrI[ii] = doe_table$DoE.Lwr.Trade[the_row]
+    outdf$UprI[ii] = doe_table$DoE.Upr.Trade[the_row]
+  }
+  
 
   return(outdf)
 
