@@ -28,8 +28,6 @@ RUN R -e "install.packages('viridis')"
 
 RUN R -e "tinytex::install_tinytex(force=TRUE)"
 RUN R -e "install.packages('jsonlite')"
-#RUN R -e "install.packages('jsonlite',dependencies=TRUE,repos = 'https://cran.r-project.org')"
-#RUN R -e "install.packages('https://cran.r-project.org/src/contrib/Archive/jsonlite/jsonlite_1.8.4.tar.gz',repos=NULL,type='source')"
 
 COPY . /srv/shiny-server
 

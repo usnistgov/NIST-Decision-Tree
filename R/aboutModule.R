@@ -46,9 +46,9 @@ about_server <- function(id) {
     function(input,output,session) {
       
       output$manual = downloadHandler(
-        filename = "NISTDecisionTree-UserManual-2023.pdf",
+        filename = "NISTDecisionTree-UserManual-2024.pdf",
         content = function(file) {
-          file.copy("./NISTDecisionTree-UserManual-2023.pdf",file)
+          file.copy("./NISTDecisionTree-UserManual-2024.pdf",file)
         }
       )
       
