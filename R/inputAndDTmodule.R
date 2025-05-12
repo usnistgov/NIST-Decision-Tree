@@ -545,7 +545,7 @@ DT_server <- function(id,vars_in) {
         dof = vars_in()$dof
 
         res = DerSimonianLaird(x = measured_vals,
-                                                  ux = standard_unc)
+                               ux = standard_unc)
 
         pval = signif(res$Qp,3)
 

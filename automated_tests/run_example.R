@@ -14,7 +14,7 @@ example_dataset = read.csv('data/example_dataset.csv')
 
 res = run_full_ndt(dataset = example_dataset,
                    exclude = rep(F,nrow(example_dataset)),
-                   procedure = 'HSSG',
+                   procedure = 'HGG',
                    num_bootstrap = 1000,
                    seed = 123,
                    n_iter = 25000,
