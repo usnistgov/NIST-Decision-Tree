@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from typing import Literal
 import subprocess
 import json
 import uuid
@@ -21,7 +22,7 @@ class TestData(BaseModel):
     std_unc: list[float] = [1,1,1]
     dof: list[int] | None = [100,100,100]
     exclude: list[bool] | None = [False,False,False]
-    test: str = 'homogeneity'
+    test: str = Literal['homogeneity','normality','symmetry']
 
 app = FastAPI()
 
@@ -36,7 +37,7 @@ async def run_ndt(req: NDT_data):
 @app.post('/run-test/')
 async def run_test(req: TestData):
 
-    uid = str(uuid.uuid4())
+    # uid = str(uuid.uuid4())
     input_path = f"tmp_input.json"
     output_path = f"tmp_output.json"
 
@@ -44,8 +45,8 @@ async def run_test(req: TestData):
         json.dump(req.model_dump(), f)
 
     result = subprocess.run(
-        ["C:/Users/dtn1/AppData/Local/Programs/R/R-4.3.1/bin/Rscript.exe",
-         "fastapi_files/run_test.R", input_path, output_path],
+        ["C:/Users/dtn1/AppData/Local/Programs/R/R-4.3.1/bin/Rscript.exe", "fastapi_files/run_test.R", 
+         input_path, output_path],
          capture_output=True,
          text=True,
          check=True
