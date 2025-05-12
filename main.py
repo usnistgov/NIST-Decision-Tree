@@ -45,7 +45,7 @@ async def run_test(req: TestData):
         json.dump(req.model_dump(), f)
 
     result = subprocess.run(
-        ["C:/Users/dtn1/AppData/Local/Programs/R/R-4.3.1/bin/Rscript.exe", "fastapi_files/run_test.R", 
+        ["Rscript", "fastapi_files/run_test.R", 
          input_path, output_path],
          capture_output=True,
          text=True,
