@@ -1,0 +1,6 @@
+{
+    "laboratory":["Lab1","Lab2","Lab3","Lab4","Lab5"],
+    "measured_values":[1,3,5,4,2],
+    "std_unc":[1,2,1,2,1],
+    "procedure":"Gauss-Gauss"
+}
