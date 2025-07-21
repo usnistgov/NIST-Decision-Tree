@@ -1,0 +1,36 @@
+FROM rocker/r-ver:4.4
+
+RUN apt-get update -y && apt-get install -y \
+    jags 
+    
+WORKDIR /app
+
+RUN R -e "install.packages('boot')"
+RUN R -e "install.packages('dplyr')"
+#RUN R -e "install.packages('DT')"
+RUN R -e "install.packages('extraDistr')"
+#RUN R -e "install.packages('ggplot2')"
+#RUN R -e "install.packages('knitr')"
+RUN R -e "install.packages('metafor')"
+RUN R -e "install.packages('R2jags')"
+#RUN R -e "install.packages('rhandsontable')"
+#RUN R -e "install.packages('rmarkdown')"
+RUN R -e "install.packages('rmutil')"
+#RUN R -e "install.packages('shiny')"
+#RUN R -e "install.packages('shinythemes')"
+RUN R -e "install.packages('spatstat')"
+RUN R -e "install.packages('symmetry')"
+#RUN R -e "install.packages('tinytex')"
+#RUN R -e "install.packages('viridis')"
+
+#RUN R -e "tinytex::install_tinytex(force=TRUE)"
+RUN R -e "install.packages('jsonlite')"
+RUN R -e "install.packages('plumber')"
+
+COPY . /app
+
+EXPOSE 8000
+
+CMD ["R", "-e", "pr <- plumber::plumb('/app/plumber.R'); pr$run(host='0.0.0.0', port=8000)"]
+
+
