@@ -613,33 +613,36 @@ get_DT_decision <- function(x,u,
 
   if(length(x) < 3) {
     stop("Number of included labs is less than 3.")
-
   }
-
-  # run all of the tests at once
-  homogeneity = NA
-  normality = NA
-  symmetry = NA
+  
+  results = list(
+    homogeneity = list(),
+    normality = list(),
+    symmetry = list()
+  )
 
   ### 1: homogeneity
   res = metafor::rma(yi = x,sei = u,method = "DL")
-  pval = res$QEp
-  homogeneity = ifelse(pval < sizeHetero, FALSE, TRUE)
+  results$homogeneity$alpha = sizeHetero
+  results$homogeneity$pval = res$QEp
+  results$homogeneity$is_homogeneous = ifelse(results$homogeneity$pval < sizeHetero, FALSE, TRUE)
 
   ### 2: normality
   res = stats::shapiro.test((x-median(x))/u)
-  pval = res$p.value
-  normality = ifelse(pval < sizeGauss, FALSE, TRUE)
+  results$normality$alpha = sizeGauss
+  results$normality$pval = res$p.value
+  results$normality$is_normal = ifelse(results$normality$pval < sizeGauss, FALSE, TRUE)
 
   ### 3: symmetry
   MGG = symmetry::MGG
   res = symmetry::symmetry_test(x,stat='MGG',bootstrap=TRUE, B=5000)
-  pval = res$p.value
-  symmetry = ifelse(pval < sizeSym, FALSE, TRUE)
+  results$symmetry$alpha = sizeSym
+  results$symmetry$pval = res$p.value
+  results$symmetry$is_symmetric = ifelse(results$symmetry$pval < sizeSym, FALSE, TRUE)
 
   # left side of tree
-  if(homogeneity) {
-    if(normality) {
+  if(results$homogeneity$is_homogeneous) {
+    if(results$normality$is_normal) {
       the_proc = "AWA"
     } else{
       the_proc = "WM"
@@ -647,9 +650,9 @@ get_DT_decision <- function(x,u,
 
     # right side of tree
   } else {
-    if(symmetry) {
+    if(results$symmetry$is_symmetric) {
 
-      if(normality) {
+      if(results$normality$is_normal) {
         the_proc = "HGG"
 
       } else{
@@ -661,7 +664,7 @@ get_DT_decision <- function(x,u,
     }
   }
 
-  return(the_proc)
+  return(list(recommendation=the_proc,results=results))
 
 }
 
@@ -756,7 +759,7 @@ run_full_ndt = function(dataset,
                                u=vars_in$standard_unc,
                                sizeHetero=0.10,
                                sizeGauss=0.05,
-                               sizeSym=0.05)
+                               sizeSym=0.05)$recommendation
   } else {
     the_proc = procedure
 

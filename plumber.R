@@ -6,7 +6,7 @@ source('R/symmetricalBootstrapCI.R')
 source('R/weightedMedian.R')
 
 # default parameters
-default_params = list(
+default_params_run_ndt = list(
   laboratory=c("Lab1","Lab2","Lab3","Lab4","Lab5"),
   measured_values=c(1,3,5,4,2),
   std_unc=c(1,2,1,2,1),
@@ -19,19 +19,72 @@ default_params = list(
   burn_in=25000
 )
 
+default_params_run_tests = list(
+  measured_values = NA,
+  std_unc = NA,
+  homogeneity_alpha = 0.10,
+  normality_alpha = 0.05,
+  symmetry_alpha = 0.05
+)
+
 
 #* @apiTitle NDT API
 #* @apiDescription Implements NDT as a REST API
 
 #* Echo back the input
-#* @get /test
+#* @get /health-check
 function(res) {
   return("Server is up and running.")
 }
 
+#* Run hypothesis tests
+#* @param req
+#* @post /run-tests
+function(req) {
+  
+  body <- jsonlite::fromJSON(req$postBody)
+  
+  # required values
+  if(!(('measured_values') %in% names(body))) {
+    return("Error: no field named 'measured_values' in POST request.")
+  }
+  
+  if(!(('standard_uncertainties') %in% names(body))) {
+    return("Error: no field named 'std_unc' in POST request.")
+  }
+  
+  # optional parameters 
+  if('homogeneity_alpha' %in% names(body)) {
+    homogeneity_alpha = as.numeric(body$homogeneity_alpha)
+  } else {
+    homogeneity_alpha = default_params_run_tests$homogeneity_alpha
+  }
+  
+  if('normality_alpha' %in% names(body)) {
+    normality_alpha = as.numeric(body$normality_alpha)
+  } else {
+    normality_alpha = default_params_run_tests$normality_alpha
+  }
+  
+  if('symmetry_alpha' %in% names(body)) {
+    symmetry_alpha = as.numeric(body$symmetry_alpha)
+  } else {
+    symmetry_alpha = default_params_run_tests$symmetry_alpha
+  }
+  
+  res = get_DT_decision(x=as.numeric(body$measured_values),
+                        u=as.numeric(body$standard_uncertainties),
+                        sizeHetero=homogeneity_alpha,
+                        sizeGauss=normality_alpha,
+                        sizeSym=symmetry_alpha)
+  
+  return(res)
+  
+}
+
 #* Run selected NDT procedure
 #* @param req
-#* @post /run_ndt
+#* @post /run-ndt
 function(req) {
   
   # get post body
