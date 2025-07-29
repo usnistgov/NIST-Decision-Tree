@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "laboratory": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 3
+    },
+    "measured_values": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3
+    },
+    "std_unc": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3
+    },
+    "dof:rep": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "minItems": 0
+    },
+    "exclude": {
+      "type": "array",
+      "items": {
+        "type": "boolean"
+      },
+      "minItems": 0
+    },
+    "procedure": {
+      "type": "string"
+    },
+    "num_bootstrap": {
+      "type": "integer"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "n_iter": {
+      "type": "integer"
+    },
+    "burn_in": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "laboratory",
+    "measured_values",
+    "std_unc"
+  ],
+  "additionalProperties": false
+}
