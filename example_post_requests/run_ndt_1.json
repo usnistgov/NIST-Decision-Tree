@@ -2,7 +2,7 @@
     "laboratory":["Lab1","Lab2","Lab3","Lab4","Lab5"],
     "measured_values":[1,3,5,4,2],
     "std_unc":[1,2,1,2,1],
-    "dof:rep":[30,30,30,30,30],
+    "dof":[30,30,30,30,30],
     "exclude":[false,false,false,false,false],
     "procedure":"Recommended",
     "num_bootstrap":1000,

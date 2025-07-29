@@ -23,7 +23,7 @@
       },
       "minItems": 3
     },
-    "dof:rep": {
+    "dof": {
       "type": "array",
       "items": {
         "type": "integer"
