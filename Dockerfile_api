@@ -26,6 +26,7 @@ RUN R -e "install.packages('symmetry')"
 #RUN R -e "tinytex::install_tinytex(force=TRUE)"
 RUN R -e "install.packages('jsonlite')"
 RUN R -e "install.packages('plumber')"
+RIM R -e "install.packages('jsonvalidate')"
 
 COPY . /app
 
