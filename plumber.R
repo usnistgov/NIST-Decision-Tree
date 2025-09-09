@@ -1,17 +1,21 @@
 library(plumber)
+library(jsonvalidate)
+library(jsonlite)
+
 source('R/utils.R')
 source('R/KCplotDoEplot_6_22.R')
 source('R/sampleFromTau2Dist.R')
 source('R/symmetricalBootstrapCI.R')
 source('R/weightedMedian.R')
 
+# schema validators
+run_tests_validator = json_validator('example_post_requests/run_tests_json_schema.json',engine='ajv')
+run_ndt_validator = json_validator('example_post_requests/run_ndt_json_schema.json',engine='ajv')
+
 # default parameters
 default_params_run_ndt = list(
-  laboratory=c("Lab1","Lab2","Lab3","Lab4","Lab5"),
-  measured_values=c(1,3,5,4,2),
-  std_unc=c(1,2,1,2,1),
-  dof=rep(30,5),
-  exclude=rep(FALSE,5),
+  dof=100,
+  exclude=FALSE,
   procedure="Recommended",
   num_bootstrap=1000,
   seed=123,
@@ -21,7 +25,7 @@ default_params_run_ndt = list(
 
 default_params_run_tests = list(
   measured_values = NA,
-  std_unc = NA,
+  standard_uncertainties = NA,
   homogeneity_alpha = 0.10,
   normality_alpha = 0.05,
   symmetry_alpha = 0.05
@@ -40,17 +44,17 @@ function(res) {
 #* Run hypothesis tests
 #* @param req
 #* @post /run-tests
-function(req) {
+function(req, res) {
   
-  body <- jsonlite::fromJSON(req$postBody)
-  
-  # required values
-  if(!(('measured_values') %in% names(body))) {
-    return("Error: no field named 'measured_values' in POST request.")
-  }
-  
-  if(!(('standard_uncertainties') %in% names(body))) {
-    return("Error: no field named 'std_unc' in POST request.")
+  body = jsonlite::fromJSON(req$postBody)
+
+  # Validate request based on json schema
+  if (!run_tests_validator(req$postBody)) {
+    res$status = 400
+    return(list(
+      error = "Invalid request",
+      details = attr(run_tests_validator(req$postBody, verbose = TRUE), "errors")
+    ))
   }
   
   # optional parameters 
@@ -85,22 +89,39 @@ function(req) {
 #* Run selected NDT procedure
 #* @param req
 #* @post /run-ndt
-function(req) {
+function(req, res) {
   
   # get post body
-  body <- jsonlite::fromJSON(req$postBody)
+  body = jsonlite::fromJSON(req$postBody)
+  
+  # validate request
+  if (!run_ndt_validator(req$postBody)) {
+    res$status = 400
+    return(list(
+      error = "Invalid request",
+      details = attr(run_ndt_validator(req$postBody, verbose = TRUE), "errors")
+    ))
+  }
 
   # fill in body arguments with defaults where missing
-  for(n in names(default_params)) {
+  for(n in names(default_params_run_ndt)) {
     if(is.null(body[[n]])) {
-      body[[n]] = default_params[[n]]
+      
+      # for dof and exclude, need to make them same length as other inputs
+      if(n %in% c('dof','exclude')) {
+        body[[n]] = rep(default_params_run_ndt[[n]],length(body$measured_values))
+        
+      } else {
+        body[[n]] = default_params_run_ndt[[n]]
+        
+      }
     }
   }
   
   dataset = data.frame(
     Laboratory = body$laboratory,
     MeasuredValues = as.numeric(body$measured_values),
-    StdUnc = as.numeric(body$std_unc),
+    StdUnc = as.numeric(body$standard_uncertainties),
     DegreesOfFreedom = as.numeric(body$dof)
   )
   
@@ -120,7 +141,7 @@ function(req) {
                      burn_in = burn_in,
                      thin = 10)
   
-  res$ndt_res$p_samples = NULL
+  res$ndt_res$p_samples = NULL # don't need to send all the posterior samples to client
   
   return(res)
 }

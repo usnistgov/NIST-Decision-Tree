@@ -3,6 +3,14 @@
   "title": "Computes hypothesis tests within the NIST Decision Tree.",
   "type": "object",
   "properties": {
+    "laboratory": {
+      "description": "Laboratory name.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 3
+    },
     "measured_values": {
       "description": "Measurement results for each laboratory.",
       "type": "array",

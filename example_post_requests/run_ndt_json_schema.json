@@ -16,7 +16,7 @@
       },
       "minItems": 3
     },
-    "std_unc": {
+    "standard_uncertainties": {
       "type": "array",
       "items": {
         "type": "number"
@@ -56,7 +56,7 @@
   "required": [
     "laboratory",
     "measured_values",
-    "std_unc"
+    "standard_uncertainties"
   ],
   "additionalProperties": false
 }
