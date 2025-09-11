@@ -1,4 +1,4 @@
-FROM rocker/r-ver:4.4
+FROM rocker/shiny:4.3.1
 
 RUN apt-get update -y && apt-get install -y \
     jags 
