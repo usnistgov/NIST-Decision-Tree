@@ -1,0 +1,45 @@
+FROM openanalytics/r-ver:4.3.3
+
+RUN apt-get update -y && apt-get install -y \
+    jags \
+    texlive-latex-recommended \
+    texlive-fonts-recommended \
+    texlive-latex-extra
+
+
+# system libraries of general use from shinyproxy example
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    pandoc \
+    pandoc-citeproc \
+    libcairo2-dev \
+    libxt-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN R -e "install.packages('boot')"
+RUN R -e "install.packages('dplyr')"
+RUN R -e "install.packages('DT')"
+RUN R -e "install.packages('extraDistr')"
+RUN R -e "install.packages('ggplot2')"
+RUN R -e "install.packages('knitr')"
+RUN R -e "install.packages('metafor')"
+RUN R -e "install.packages('R2jags')"
+RUN R -e "install.packages('rhandsontable')"
+RUN R -e "install.packages('rmarkdown')"
+RUN R -e "install.packages('rmutil')"
+RUN R -e "install.packages('shiny')"
+RUN R -e "install.packages('shinythemes')"
+RUN R -e "install.packages('spatstat')"
+RUN R -e "install.packages('symmetry')"
+RUN R -e "install.packages('tinytex')"
+RUN R -e "install.packages('viridis')"
+
+RUN R -e "tinytex::install_tinytex(force=TRUE)"
+RUN R -e "install.packages('jsonlite')"
+
+# install R code
+WORKDIR /app
+COPY . /app
+
+EXPOSE 3838
+
+CMD ["R", "-q", "-e", "shiny::runApp('/app',port=3838,host='0.0.0.0')"]
