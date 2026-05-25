@@ -9,10 +9,10 @@ source('R/symmetricalBootstrapCI.R')
 source('R/weightedMedian.R')
 
 # schema validators
-run_tests_validator = json_validator('example_post_requests/run_tests_json_schema.json',engine='ajv')
-run_ndt_validator = json_validator('example_post_requests/run_ndt_json_schema.json',engine='ajv')
+run_tests_validator = json_validator('api_schemas_and_examples/run_tests_json_schema.json',engine='ajv')
+run_ndt_validator = json_validator('api_schemas_and_examples/run_ndt_json_schema.json',engine='ajv')
 
-# default parameters
+# default parameters for running NDT
 default_params_run_ndt = list(
   dof=100,
   exclude=FALSE,
@@ -20,9 +20,11 @@ default_params_run_ndt = list(
   num_bootstrap=1000,
   seed=123,
   n_iter=50000,
-  burn_in=25000
+  burn_in=25000,
+  thinning_rate=10
 )
 
+# default parameters for running the hypothesis tests
 default_params_run_tests = list(
   measured_values = NA,
   standard_uncertainties = NA,
@@ -30,6 +32,9 @@ default_params_run_tests = list(
   normality_alpha = 0.05,
   symmetry_alpha = 0.05
 )
+
+# valid NDT procedures
+valid_procedures <- c('Recommended','awa','wmed','hgg','hlg','hssg')
 
 
 #* @apiTitle NDT API
@@ -57,7 +62,7 @@ function(req, res) {
     ))
   }
   
-  # optional parameters 
+  # insert optional parameters from request (or use defaults)
   if('homogeneity_alpha' %in% names(body)) {
     homogeneity_alpha = as.numeric(body$homogeneity_alpha)
   } else {
@@ -76,6 +81,7 @@ function(req, res) {
     symmetry_alpha = default_params_run_tests$symmetry_alpha
   }
   
+  # run full procedure
   res = get_DT_decision(x=as.numeric(body$measured_values),
                         u=as.numeric(body$standard_uncertainties),
                         sizeHetero=homogeneity_alpha,
@@ -118,6 +124,7 @@ function(req, res) {
     }
   }
   
+  # prepare all data for function to run ndt
   dataset = data.frame(
     Laboratory = body$laboratory,
     MeasuredValues = as.numeric(body$measured_values),
@@ -130,18 +137,36 @@ function(req, res) {
   seed = as.numeric(body$seed)
   n_iter = as.numeric(body$n_iter)
   burn_in = as.numeric(body$burn_in)
+  procedure = body$procedure
+  thin = as.numeric(body$thinning_rate)
+  
+  # validate the procedure
+  if(!(procedure %in% valid_procedures)) {
+    
+    res$status <- 400
+    
+    # send error response to client
+    return(list(
+      error = "Invalid input",
+      message = paste0("The 'procedure' argument must be one of: ", 
+                       paste(valid_procedures, collapse = ", "), "."),
+      received = ifelse(is.null(procedure), "NULL", procedure)
+    ))
+    
+  }
   
   # run ndt
   res = run_full_ndt(dataset,
                      exclude,
-                     procedure = "Recommended",
+                     procedure = procedure,
                      num_bootstrap = num_bootstrap,
                      seed = seed,
                      n_iter = n_iter,
                      burn_in = burn_in,
-                     thin = 10)
+                     thin = thin)
   
-  res$ndt_res$p_samples = NULL # don't need to send all the posterior samples to client
+  # don't send the posterior samples to client (to save bandwidth)
+  res$ndt_res$p_samples = NULL 
   
   return(res)
 }

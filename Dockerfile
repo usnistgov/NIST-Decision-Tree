@@ -26,7 +26,7 @@ RUN R -e "install.packages('symmetry')"
 RUN R -e "install.packages('tinytex')"
 RUN R -e "install.packages('viridis')"
 
-RUN R -e "tinytex::install_tinytex(force=TRUE)"
+#RUN R -e "tinytex::install_tinytex(force=TRUE,version='latest')"
 RUN R -e "install.packages('jsonlite')"
 
 COPY . /srv/shiny-server

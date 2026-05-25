@@ -6,15 +6,7 @@ RUN apt-get update -y && apt-get install -y \
     texlive-fonts-recommended \
     texlive-latex-extra
 
-
 # system libraries of general use from shinyproxy example
-RUN apt-get update && apt-get install --no-install-recommends -y \
-    pandoc \
-    pandoc-citeproc \
-    libcairo2-dev \
-    libxt-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN R -e "install.packages('boot')"
 RUN R -e "install.packages('dplyr')"
 RUN R -e "install.packages('DT')"

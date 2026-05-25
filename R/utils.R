@@ -211,6 +211,7 @@ run_ndt_method = function(x,
 
   set.seed(abs(round(seed)))
   res = list()
+  
   n = length(x)
 
   if(is.null( the_proc )) {
@@ -295,7 +296,6 @@ run_ndt_method = function(x,
 
     mcmc_sampler = 'jags'
 
-
     model_inits = function() {
       list(mu = mean(x),
            tau = mad(x),
@@ -331,8 +331,7 @@ run_ndt_method = function(x,
     }
 
     if(mcmc_sampler == 'stan') {
-
-      # Run MCMC
+      # currently not implemented
 
       stan_out = stan(file=stan_filename,
                       data=model_data,
@@ -340,7 +339,6 @@ run_ndt_method = function(x,
                       iter=3000,
                       warmup=1000,
                       chains=4)
-
 
       stan_out = extract(stan_out)
 
@@ -351,7 +349,8 @@ run_ndt_method = function(x,
       res$tau = median(stan_out$tau)
 
     } else if(mcmc_sampler == 'jags') {
-
+      
+      res$jags_params = jags_params
 
       jags_out = R2jags::jags(data = model_data,
                               inits = model_inits,

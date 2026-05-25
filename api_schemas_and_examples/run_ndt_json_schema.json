@@ -51,6 +51,9 @@
     },
     "burn_in": {
       "type": "integer"
+    },
+    "thinning_rate": {
+      "type": "integer"
     }
   },
   "required": [
